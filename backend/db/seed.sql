@@ -305,6 +305,76 @@ BEGIN
 END $$;
 
 -- ============================================================
+-- 6.6 GENERATE EXTRA FLIGHTS FOR TODAY (2026-07-15)
+--     Ensure at least 5 flights for every route today
+-- ============================================================
+DO $$
+DECLARE
+    v_date DATE := '2026-07-15';
+    v_dep TIMESTAMPTZ;
+    v_arr TIMESTAMPTZ;
+    v_flight_num INT := 9100;
+    v_existing_cnt INT;
+    v_needed INT;
+    r RECORD;
+BEGIN
+    FOR r IN 
+        WITH route_templates AS (
+            SELECT DISTINCT ON (origin_airport_id, dest_airport_id)
+                origin_airport_id,
+                dest_airport_id,
+                airline_id,
+                aircraft_id,
+                base_price,
+                (arrival_time - departure_time) AS duration
+            FROM flights
+            ORDER BY origin_airport_id, dest_airport_id, departure_time DESC
+        )
+        SELECT * FROM route_templates
+    LOOP
+        -- Count how many flights exist for today on this route
+        SELECT COUNT(*) INTO v_existing_cnt
+        FROM flights
+        WHERE origin_airport_id = r.origin_airport_id
+          AND dest_airport_id = r.dest_airport_id
+          AND departure_time::DATE = v_date;
+
+        v_needed := 5 - v_existing_cnt;
+
+        IF v_needed > 0 THEN
+            FOR i IN 1..v_needed LOOP
+                -- Spacing out the flights throughout the day (01:00, 05:00, 09:00, 13:00, 17:00, 21:00)
+                v_dep := (v_date::TEXT || ' ' || 
+                          CASE (i - 1) % 6
+                              WHEN 0 THEN '01:00:00'
+                              WHEN 1 THEN '05:00:00'
+                              WHEN 2 THEN '09:00:00'
+                              WHEN 3 THEN '13:00:00'
+                              WHEN 4 THEN '17:00:00'
+                              ELSE '21:00:00'
+                          END || ' UTC')::TIMESTAMPTZ;
+                v_arr := v_dep + r.duration;
+
+                INSERT INTO flights (flight_number, airline_id, aircraft_id, origin_airport_id, dest_airport_id, departure_time, arrival_time, base_price, status, available_seats)
+                VALUES (
+                    (SELECT iata_code FROM airlines WHERE airline_id = r.airline_id) || '-' || v_flight_num::TEXT,
+                    r.airline_id,
+                    r.aircraft_id,
+                    r.origin_airport_id,
+                    r.dest_airport_id,
+                    v_dep,
+                    v_arr,
+                    r.base_price,
+                    'Scheduled',
+                    0
+                );
+                v_flight_num := v_flight_num + 1;
+            END LOOP;
+        END IF;
+    END LOOP;
+END $$;
+
+-- ============================================================
 -- 7. FLIGHT SEATS  — generate for every flight
 --    Economy  rows 10-35  (A-F)  = 156 seats  @ base_price × 1.0 (bulkhead/exit +$15)
 --    Business rows  4-9   (A-D)  =  24 seats  @ base_price × 2.5 (bulkhead +$40)
