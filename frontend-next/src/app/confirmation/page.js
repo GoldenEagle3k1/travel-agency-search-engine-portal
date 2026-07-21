@@ -1,217 +1,177 @@
-'use client';
-import { useState, useEffect } from 'react';
+import React from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
-import { getStatusBadge, formatPrice, formatDate, formatTime, formatDateTime } from '@/utils/api';
 
-export default function ConfirmationPage() {
-  const router = useRouter();
-  const [booking, setBooking] = useState(null);
 
-  useEffect(() => {
-    const token = localStorage.getItem('sb_token');
-    if (!token) {
-      router.push('/login');
-      return;
-    }
+const LogoIcon = ({ className = "w-8 h-8" }) => (
+  <svg 
+    className={`text-red-600 transform -rotate-45 transition-transform duration-500 ${className}`} 
+    viewBox="0 0 24 24" 
+    fill="none" 
+    xmlns="http://www.w3.org/2000/svg"
+  >
+    <path 
+      d="M21 16V14L13 9V3.5C13 2.67 12.33 2 11.5 2C10.67 2 10 2.67 10 3.5V9L2 14V16L10 13.5V19L8 20.5V22L11.5 21L15 22V20.5L13 19V13.5L21 16Z" 
+      fill="currentColor"
+    />
+  </svg>
+);
 
-    try {
-      const last = JSON.parse(sessionStorage.getItem('last_booking') || '{}');
-      if (last.booking_id) {
-        setBooking(last);
-      }
-    } catch {
-      // empty state
-    }
-  }, []);
-
-  if (!booking) {
-    return (
-      <div className="page-wrapper flex-center bg-brand-black min-h-screen">
-        <div className="empty-state text-center py-20 max-w-sm mx-auto space-y-4">
-          <div className="text-6xl">❓</div>
-          <h3 className="text-lg font-bold font-heading">No recent booking found</h3>
-          <p className="text-xs text-brand-gray-light">Please check your user dashboard to view existing reservations.</p>
-          <Link href="/dashboard" className="w-full inline-block py-2.5 bg-brand-red text-brand-white font-bold rounded uppercase tracking-wider text-xs hover:bg-brand-red-light transition-all shadow-lg shadow-brand-red/25">
-            View My Bookings
-          </Link>
-        </div>
-      </div>
-    );
-  }
-
-  const details = booking.booking_details || {};
-  const passes = booking.boarding_passes || [];
-
+export default function BookingConfirmationEPage() {
   return (
-    <div className="bg-brand-black text-brand-white min-h-screen font-body pt-20" style={{ background: 'radial-gradient(ellipse 70% 50% at 50% 0%, rgba(220,38,38,0.15), transparent 60%)' }}>
-      <div className="container mx-auto px-6 py-12 max-w-3xl space-y-8 print:py-0 print:max-w-full">
-        
-        {/* Success Header */}
-        <div className="text-center space-y-3 print:hidden">
-          <div className="text-6xl animate-bounce-in">🎉</div>
-          <h1 className="text-3xl font-black font-heading">Booking <span className="gradient-text">Confirmed!</span></h1>
-          <p className="text-xs text-brand-gray-light">Your seats are reserved. Safe travels!</p>
-          <div className="inline-block px-4 py-1.5 rounded-full border border-brand-red/30 bg-brand-red/10 text-brand-red-light text-xs font-bold uppercase tracking-wider mt-2 shadow shadow-brand-red/15 animate-pulse-glow">
-            Booking Reference: {booking.booking_reference}
-          </div>
-        </div>
+    <>
+      {/* Material Symbols */}
+      <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet" />
+       Intent implies focused transaction/confirmation context. Suppressing SideNav and TopNav as per rules.  Main Content Area <main className="flex-1 w-full min-h-screen py-section-gap px-container-padding flex flex-col items-center">
+<div className="w-full max-w-4xl mx-auto flex flex-col gap-8">
 
-        {/* Overview receipt */}
-        <div className="p-6 bg-brand-charcoal border border-brand-gray-dark/40 rounded-xl shadow-xl print:border-none print:bg-transparent print:shadow-none">
-          <h4 className="text-xs font-bold font-heading uppercase text-brand-red-light tracking-wider border-b border-brand-gray-dark/40 pb-2 mb-4 print:text-black print:border-black">
-            🧾 Reservation Overview
-          </h4>
-          
-          <div className="grid grid-cols-2 md:grid-cols-3 gap-6 text-xs">
-            <div>
-              <div className="text-brand-gray-light font-semibold uppercase tracking-wider mb-1 print:text-gray-600">Booking Ref</div>
-              <div className="text-base font-extrabold font-heading text-brand-white print:text-black">{booking.booking_reference}</div>
-            </div>
-            <div>
-              <div className="text-brand-gray-light font-semibold uppercase tracking-wider mb-1 print:text-gray-600">Status</div>
-              <div className="mt-1" dangerouslySetInnerHTML={{ __html: getStatusBadge('Confirmed') }} />
-            </div>
-            <div>
-              <div className="text-brand-gray-light font-semibold uppercase tracking-wider mb-1 print:text-gray-600">Trip Type</div>
-              <div className="inline-block px-2 py-0.5 rounded bg-brand-red/10 border border-brand-red/20 text-brand-red-light font-bold uppercase text-[10px] mt-1 print:border-black print:text-black">
-                {details.trip_type || '—'}
-              </div>
-            </div>
-            <div>
-              <div className="text-brand-gray-light font-semibold uppercase tracking-wider mb-1 print:text-gray-600">Total Paid</div>
-              <div className="text-base font-extrabold font-heading text-brand-red-light print:text-black">{formatPrice(details.total_amount)}</div>
-            </div>
-            <div>
-              <div className="text-brand-gray-light font-semibold uppercase tracking-wider mb-1 print:text-gray-600">Outbound Route</div>
-              <div className="text-brand-white font-semibold print:text-black mt-1">
-                {details.outbound_route || '—'} 
-                <span className="block text-[10px] text-brand-gray-light font-normal print:text-gray-600">{formatDateTime(details.outbound_departure)}</span>
-              </div>
-            </div>
-            {details.return_route && (
-              <div>
-                <div className="text-brand-gray-light font-semibold uppercase tracking-wider mb-1 print:text-gray-600">Return Route</div>
-                <div className="text-brand-white font-semibold print:text-black mt-1">
-                  {details.return_route}
-                  <span className="block text-[10px] text-brand-gray-light font-normal print:text-gray-600">{formatDateTime(details.return_departure)}</span>
-                </div>
-              </div>
-            )}
-          </div>
-        </div>
+<div className="flex flex-col items-center text-center gap-4 mb-8">
+<div className="w-20 h-20 rounded-full bg-primary-container/20 flex items-center justify-center neon-glow border border-primary-container/50">
+<span className="material-symbols-outlined text-[48px] text-primary-container" style={{ fontVariationSettings: "'FILL' 1" }}>check_circle</span>
+</div>
+<div>
+<h1 className="font-headline-lg text-headline-lg text-on-surface mb-2">Booking Successful</h1>
+<p className="font-body-lg text-body-lg text-on-surface-variant">Your reservation has been confirmed and ticketed.</p>
+</div>
+</div>
 
-        {/* Boarding Passes */}
-        <div className="space-y-4">
-          <h3 className="text-lg font-bold font-heading print:hidden">🎫 Your Boarding Passes</h3>
-          
-          <div className="space-y-4 print:space-y-8">
-            {passes.length === 0 ? (
-              <div className="p-6 bg-brand-charcoal border border-brand-gray-dark/40 rounded-xl text-center text-brand-gray-light">
-                <p>Boarding passes will appear in your dashboard shortly.</p>
-                <Link href="/dashboard" className="btn btn-primary mt-3">View Dashboard</Link>
-              </div>
-            ) : (
-              passes.map((bp, i) => {
-                const bs = bp.booking_seats || {};
-                const fs = bs.flight_seats || {};
-                const fl = bs.flights || {};
-                const al = fl.airlines || {};
-                const oa = fl.origin_ap || {};
-                const da = fl.dest_ap || {};
-                
-                return (
-                  <div key={i} className="bg-brand-charcoal border border-brand-gray-dark/40 rounded-xl overflow-hidden shadow-lg print:border-black print:text-black print:bg-white">
-                    {/* Header */}
-                    <div className="px-6 py-4 bg-brand-black/50 border-b border-brand-gray-dark/40 flex justify-between items-center print:bg-gray-100 print:border-black">
-                      <div>
-                        <div className="text-[9px] text-brand-gray-light uppercase font-bold tracking-wider print:text-gray-600">Airline / Flight</div>
-                        <div className="text-sm font-bold text-brand-white print:text-black">{al.airline_name}</div>
-                        <div className="text-xs text-brand-red-light font-bold print:text-black">{fl.flight_number}</div>
-                      </div>
-                      <div className="text-center">
-                        <div className="text-[9px] text-brand-gray-light uppercase font-bold tracking-wider print:text-gray-600">Document</div>
-                        <div className="px-2 py-0.5 rounded bg-green-500/10 border border-green-500/20 text-green-400 text-[10px] font-bold uppercase mt-1 print:border-black print:text-black">
-                          ✅ BOARDING PASS
+<div className="flex flex-col lg:flex-row gap-6 w-full">
+
+<div className="flex-1 glass-panel rounded-xl flex flex-col overflow-hidden relative">
+
+<div className="p-6 border-b border-white/10 flex justify-between items-center bg-white/5">
+<div className="flex items-center gap-4">
+<div className="w-12 h-12 rounded bg-white flex items-center justify-center p-1">
+
+<div className="text-red-600 font-headline-md font-bold text-center leading-none">E</div>
+</div>
+<div>
+<div className="font-label-md text-label-md text-on-surface-variant uppercase">Flight</div>
+<div className="font-headline-md text-headline-md text-on-surface">EK-622</div>
+</div>
+</div>
+<div className="text-right">
+<div className="font-label-md text-label-md text-on-surface-variant uppercase">Booking Ref (PNR)</div>
+<div className="font-display-lg text-display-lg text-primary-container neon-text-glow">X7Y8Z9</div>
+</div>
+</div>
+
+<div className="p-8 flex flex-col gap-8 relative">
+
+<div className="flex justify-between items-start">
+<div>
+<div className="font-label-md text-label-md text-on-surface-variant uppercase mb-1">Passenger</div>
+<div className="font-headline-lg text-headline-lg text-on-surface">Ahmed S.</div>
+</div>
+<div className="text-right">
+<div className="font-label-md text-label-md text-on-surface-variant uppercase mb-1">Class</div>
+<div className="inline-block px-3 py-1 rounded bg-surface border-l-4 border-primary-container font-mono-data text-mono-data text-on-surface">Business</div>
+</div>
+</div>
+
+<div className="flex items-center justify-between w-full py-4 relative">
+
+<div className="flex flex-col gap-1 w-1/3">
+<span className="font-display-lg text-display-lg text-on-surface leading-none">DXB</span>
+<span className="font-body-md text-body-md text-on-surface-variant">Dubai Intl</span>
+<span className="font-mono-data text-mono-data text-on-surface mt-2">14:30<br/>24 Oct</span>
+</div>
+
+<div className="flex-1 flex flex-col items-center justify-center relative px-4">
+<span className="material-symbols-outlined text-primary-container absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-[#0A0A0A] px-2 z-10" style={{ fontVariationSettings: "'FILL' 1" }}>flight_takeoff</span>
+<div className="w-full h-px bg-white/20 relative">
+<div className="absolute left-0 top-1/2 -translate-y-1/2 w-2 h-2 rounded-full border border-white bg-transparent"></div>
+<div className="absolute right-0 top-1/2 -translate-y-1/2 w-2 h-2 rounded-full border border-white bg-transparent"></div>
+</div>
+<span className="font-label-md text-label-md text-on-surface-variant mt-4">7h 15m</span>
+</div>
+
+<div className="flex flex-col gap-1 w-1/3 text-right">
+<span className="font-display-lg text-display-lg text-on-surface leading-none">LHR</span>
+<span className="font-body-md text-body-md text-on-surface-variant">London Heathrow</span>
+<span className="font-mono-data text-mono-data text-on-surface mt-2">18:45<br/>24 Oct</span>
+</div>
+</div>
+
+<div className="grid grid-cols-4 gap-4 bg-white/5 p-4 rounded-lg border border-white/5">
+<div>
+<div className="font-label-md text-label-md text-on-surface-variant uppercase mb-1">Terminal</div>
+<div className="font-headline-md text-headline-md text-on-surface">3</div>
+</div>
+<div>
+<div className="font-label-md text-label-md text-on-surface-variant uppercase mb-1">Gate</div>
+<div className="font-headline-md text-headline-md text-on-surface">A12</div>
+</div>
+<div>
+<div className="font-label-md text-label-md text-on-surface-variant uppercase mb-1">Seat</div>
+<div className="font-headline-md text-headline-md text-on-surface">3C</div>
+</div>
+<div>
+<div className="font-label-md text-label-md text-on-surface-variant uppercase mb-1">Baggage</div>
+<div className="font-headline-md text-headline-md text-on-surface">40kg</div>
+</div>
+</div>
+</div>
+
+<div className="relative w-full h-px">
+<div className="absolute inset-0 dashed-line"></div>
+<div className="ticket-cutout ticket-cutout-left"></div>
+<div className="ticket-cutout ticket-cutout-right"></div>
+</div>
+
+<div className="p-6 bg-white/5 flex items-center justify-between">
+<div className="font-mono-data text-mono-data text-on-surface-variant tracking-widest">
+                            ETKT 176 9876543210
                         </div>
-                      </div>
-                      <div className="text-right">
-                        <div className="text-[9px] text-brand-gray-light uppercase font-bold tracking-wider print:text-gray-600">Passenger</div>
-                        <div className="text-sm font-bold text-brand-white print:text-black">{bs.pax_first_name} {bs.pax_last_name}</div>
-                        <div className="text-[10px] text-brand-gray-light print:text-gray-600">{bs.pax_passport || '—'}</div>
-                      </div>
-                    </div>
+<div className="barcode-bars">
+<div className="barcode-bar w-2"></div><div className="barcode-bar w-1"></div><div className="barcode-bar w-3"></div><div className="barcode-bar w-1"></div><div className="barcode-bar w-2"></div>
+<div className="barcode-bar w-4"></div><div className="barcode-bar w-1"></div><div className="barcode-bar w-2"></div><div className="barcode-bar w-1"></div><div className="barcode-bar w-3"></div>
+<div className="barcode-bar w-2"></div><div className="barcode-bar w-1"></div><div className="barcode-bar w-4"></div><div className="barcode-bar w-1"></div><div className="barcode-bar w-2"></div>
+<div className="barcode-bar w-1"></div><div className="barcode-bar w-3"></div><div className="barcode-bar w-2"></div><div className="barcode-bar w-1"></div><div className="barcode-bar w-2"></div>
+</div>
+</div>
+</div>
 
-                    {/* Route Body */}
-                    <div className="p-6 grid grid-cols-3 items-center text-center">
-                      <div className="text-left">
-                        <div className="text-[10px] text-brand-gray-light uppercase font-bold tracking-wider print:text-gray-600">From</div>
-                        <div className="text-3xl font-black font-heading text-brand-white print:text-black">{oa.iata_code}</div>
-                        <div className="text-[10px] text-brand-gray-light truncate print:text-gray-600">{oa.cities?.city_name}</div>
-                        
-                        <div className="mt-3">
-                          <div className="text-[9px] text-brand-gray-light uppercase font-bold tracking-wider print:text-gray-600">Departs</div>
-                          <div className="text-base font-extrabold text-brand-white print:text-black">{formatTime(fl.departure_time)}</div>
-                          <div className="text-[10px] text-brand-gray-light print:text-gray-600">{formatDate(fl.departure_time)}</div>
-                        </div>
-                      </div>
+<div className="w-full lg:w-80 flex flex-col gap-6">
 
-                      <div className="flex flex-col items-center">
-                        <div className="text-3xl text-brand-red transform rotate-90 print:text-black">✈</div>
-                        <div className="text-xs font-bold text-brand-gray-light uppercase tracking-wider mt-2 print:text-black">
-                          {fs.class || 'Economy'}
-                        </div>
-                      </div>
+<div className="flex flex-col gap-3">
+<button className="w-full flex items-center justify-center gap-2 py-3 px-4 rounded btn-primary font-label-md text-label-md">
+<span className="material-symbols-outlined">download</span>
+                            Download PDF E-ticket
+                        </button>
+<button className="w-full flex items-center justify-center gap-2 py-3 px-4 rounded btn-ghost font-label-md text-label-md">
+<span className="material-symbols-outlined">print</span>
+                            Print Receipt
+                        </button>
+</div>
 
-                      <div className="text-right">
-                        <div className="text-[10px] text-brand-gray-light uppercase font-bold tracking-wider print:text-gray-600">To</div>
-                        <div className="text-3xl font-black font-heading text-brand-white print:text-black">{da.iata_code}</div>
-                        <div className="text-[10px] text-brand-gray-light truncate print:text-gray-600">{da.cities?.city_name}</div>
-                        
-                        <div className="mt-3">
-                          <div className="text-[9px] text-brand-gray-light uppercase font-bold tracking-wider print:text-gray-600">Arrives</div>
-                          <div className="text-base font-extrabold text-brand-white print:text-black">{formatTime(fl.arrival_time)}</div>
-                          <div className="text-[10px] text-brand-gray-light print:text-gray-600">{formatDate(fl.arrival_time)}</div>
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Details Footer */}
-                    <div className="px-6 py-4 bg-brand-black/30 border-t border-brand-gray-dark/40 flex justify-between items-center print:border-black print:bg-gray-100">
-                      <div>
-                        <div className="text-[9px] text-brand-gray-light uppercase font-bold tracking-wider print:text-gray-600">Seat</div>
-                        <div className="text-lg font-black font-heading text-brand-red-light print:text-black">{fs.seat_number || '—'}</div>
-                      </div>
-                      <div>
-                        <div className="text-[9px] text-brand-gray-light uppercase font-bold tracking-wider print:text-gray-600">Gate</div>
-                        <div className="text-lg font-black font-heading text-brand-white print:text-black">{bp.gate || 'TBD'}</div>
-                      </div>
-                      <div className="text-right">
-                        <div className="text-[10px] bg-brand-white text-brand-black px-4 py-2 font-mono tracking-[4px] rounded border border-brand-gray-dark shadow-inner uppercase font-bold select-none print:border-black">
-                          {bp.barcode || 'SKYBOOK'}
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                );
-              })
-            )}
-          </div>
-        </div>
-
-        {/* Action button layout */}
-        <div className="flex gap-3 justify-center pt-4 flex-wrap print:hidden">
-          <Link href="/dashboard" className="px-5 py-2.5 bg-brand-red text-brand-white font-bold rounded uppercase tracking-wider text-xs hover:bg-brand-red-light transition-all shadow-md shadow-brand-red/25 transform hover:-translate-y-0.5">
-            📋 View My Bookings
-          </Link>
-          <button onClick={() => window.print()} className="px-5 py-2.5 border border-brand-gray-dark/50 text-brand-gray-light hover:text-brand-white hover:border-brand-gray-muted text-xs font-bold rounded uppercase tracking-wider transition-colors">
-            🖨️ Print Boarding Passes
-          </button>
-          <Link href="/" className="px-5 py-2.5 text-xs text-brand-gray-light hover:text-brand-white hover:bg-brand-card transition-all font-semibold rounded uppercase tracking-wider">
-            🏠 Back to Home
-          </Link>
-        </div>
-      </div>
-    </div>
+<div className="glass-panel rounded-xl p-6 flex flex-col gap-4">
+<h3 className="font-headline-md text-headline-md text-on-surface">What's Next</h3>
+<div className="flex flex-col gap-4">
+<div className="flex gap-3">
+<span className="material-symbols-outlined text-primary-container" style={{ fontVariationSettings: "'FILL' 1" }}>luggage</span>
+<div>
+<div className="font-label-md text-label-md text-on-surface">Baggage Policy</div>
+<div className="font-body-md text-body-md text-on-surface-variant text-sm mt-1">Review prohibited items and dimensions before arriving.</div>
+</div>
+</div>
+<div className="flex gap-3">
+<span className="material-symbols-outlined text-primary-container" style={{ fontVariationSettings: "'FILL' 1" }}>how_to_reg</span>
+<div>
+<div className="font-label-md text-label-md text-on-surface">Online Check-in</div>
+<div className="font-body-md text-body-md text-on-surface-variant text-sm mt-1">Opens 48 hours before departure. We'll send a reminder.</div>
+</div>
+</div>
+</div>
+<div className="w-full h-px bg-white/10 my-2"></div>
+<Link href="/booking"  className="flex items-center gap-2 font-label-md text-label-md text-primary hover:text-primary-container transition-colors" >
+                            Manage This Booking
+                            <span className="material-symbols-outlined text-sm">arrow_forward</span>
+</Link>
+</div>
+</div>
+</div>
+</div>
+</main>
+    </>
   );
 }

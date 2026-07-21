@@ -1,159 +1,151 @@
 'use client';
-import { useState, useEffect } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
-import { Api, Auth } from '@/utils/api';
-import { useAuth } from '@/context/AuthContext';
-import { Suspense } from 'react';
-
-function LoginForm() {
-  const router = useRouter();
-  const searchParams = useSearchParams();
-  const { login } = useAuth();
-  const [tab, setTab] = useState(searchParams.get('tab') === 'register' ? 'register' : 'login');
-  const [loading, setLoading] = useState(false);
-
-  // Login fields
-  const [loginEmail, setLoginEmail] = useState('');
-  const [loginPassword, setLoginPassword] = useState('');
-
-  // Register fields
-  const [regEmail, setRegEmail] = useState('');
-  const [regPassword, setRegPassword] = useState('');
-  const [regFirst, setRegFirst] = useState('');
-  const [regLast, setRegLast] = useState('');
-  const [regPhone, setRegPhone] = useState('');
-  const [regPassport, setRegPassport] = useState('');
-
-  async function handleLogin(e) {
-    e.preventDefault();
-    if (!loginEmail || !loginPassword) { window.showToast?.('Please fill in all fields', 'warning'); return; }
-    setLoading(true);
-    try {
-      await login(loginEmail, loginPassword);
-      window.showToast?.('Welcome back! ✈️', 'success');
-      const redirect = searchParams.get('redirect') || '/dashboard';
-      router.push(redirect);
-    } catch (err) {
-      window.showToast?.(err.message, 'error');
-    } finally {
-      setLoading(false);
-    }
-  }
-
-  async function handleRegister(e) {
-    e.preventDefault();
-    if (!regEmail || !regPassword || !regFirst || !regLast) {
-      window.showToast?.('Please fill in all required fields', 'warning'); return;
-    }
-    setLoading(true);
-    try {
-      await Api.post('/auth/register', {
-        email: regEmail, password: regPassword,
-        first_name: regFirst, last_name: regLast,
-        phone: regPhone, passport_no: regPassport,
-      });
-      window.showToast?.('Account created! Please log in.', 'success');
-      setTab('login');
-      setLoginEmail(regEmail);
-    } catch (err) {
-      window.showToast?.(err.message, 'error');
-    } finally {
-      setLoading(false);
-    }
-  }
-
-  return (
-    <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--bg-primary)', padding: '6rem 1.5rem 3rem' }}>
-      <div style={{ width: '100%', maxWidth: 460 }}>
-        {/* Brand */}
-        <div className="text-center mb-4">
-          <div style={{ fontSize: '3rem', marginBottom: '0.5rem' }}>✈️</div>
-          <h2>Sky<span className="gradient-text">Ways</span></h2>
-          <p className="text-sm mt-1">Your premium flight booking platform</p>
-        </div>
-
-        {/* Tab switch */}
-        <div className="trip-tabs mb-4" style={{ justifyContent: 'center' }}>
-          <button className={`trip-tab${tab === 'login' ? ' active' : ''}`} onClick={() => setTab('login')}>Sign In</button>
-          <button className={`trip-tab${tab === 'register' ? ' active' : ''}`} onClick={() => setTab('register')}>Register</button>
-        </div>
-
-        {/* Login Form */}
-        {tab === 'login' && (
-          <div className="card">
-            <h3 className="mb-3">Welcome Back</h3>
-            <form onSubmit={handleLogin}>
-              <div className="form-group">
-                <label>Email Address</label>
-                <input type="email" placeholder="you@example.com" value={loginEmail} onChange={e => setLoginEmail(e.target.value)} required />
-              </div>
-              <div className="form-group">
-                <label>Password</label>
-                <input type="password" placeholder="••••••••" value={loginPassword} onChange={e => setLoginPassword(e.target.value)} required />
-              </div>
-              <button type="submit" className="btn btn-primary btn-full" disabled={loading}>
-                {loading ? <><span className="spinner spinner-sm" /> Signing in...</> : '🔐 Sign In'}
-              </button>
-            </form>
-            <p className="text-center text-sm mt-3 text-muted">
-              No account?{' '}
-              <button onClick={() => setTab('register')} style={{ background: 'none', border: 'none', color: 'var(--red-light)', cursor: 'pointer', fontWeight: 600 }}>Register here</button>
-            </p>
-          </div>
-        )}
-
-        {/* Register Form */}
-        {tab === 'register' && (
-          <div className="card">
-            <h3 className="mb-3">Create Account</h3>
-            <form onSubmit={handleRegister}>
-              <div className="grid-2">
-                <div className="form-group">
-                  <label>First Name *</label>
-                  <input type="text" placeholder="John" value={regFirst} onChange={e => setRegFirst(e.target.value)} required />
-                </div>
-                <div className="form-group">
-                  <label>Last Name *</label>
-                  <input type="text" placeholder="Doe" value={regLast} onChange={e => setRegLast(e.target.value)} required />
-                </div>
-              </div>
-              <div className="form-group">
-                <label>Email Address *</label>
-                <input type="email" placeholder="you@example.com" value={regEmail} onChange={e => setRegEmail(e.target.value)} required />
-              </div>
-              <div className="form-group">
-                <label>Password *</label>
-                <input type="password" placeholder="Min. 8 characters" value={regPassword} onChange={e => setRegPassword(e.target.value)} required />
-              </div>
-              <div className="grid-2">
-                <div className="form-group">
-                  <label>Phone</label>
-                  <input type="tel" placeholder="+92 300 0000000" value={regPhone} onChange={e => setRegPhone(e.target.value)} />
-                </div>
-                <div className="form-group">
-                  <label>Passport No.</label>
-                  <input type="text" placeholder="AB1234567" value={regPassport} onChange={e => setRegPassport(e.target.value)} />
-                </div>
-              </div>
-              <button type="submit" className="btn btn-primary btn-full" disabled={loading}>
-                {loading ? <><span className="spinner spinner-sm" /> Creating account...</> : '✈️ Create Account'}
-              </button>
-            </form>
-            <p className="text-center text-sm mt-3 text-muted">
-              Already have an account?{' '}
-              <button onClick={() => setTab('login')} style={{ background: 'none', border: 'none', color: 'var(--red-light)', cursor: 'pointer', fontWeight: 600 }}>Sign in</button>
-            </p>
-          </div>
-        )}
-      </div>
-    </div>
-  );
-}
+import { useState } from 'react';
+import Link from 'next/link';
 
 export default function LoginPage() {
+  const [showPassword, setShowPassword] = useState(false);
+
   return (
-    <Suspense>
-      <LoginForm />
-    </Suspense>
+    <main className="flex h-screen w-full overflow-hidden" style={{ background: '#131313', color: '#e5e2e1' }}>
+      {/* ── LEFT: Cinematic cabin image ── */}
+      <section className="hidden lg:flex lg:w-1/2 relative overflow-hidden" style={{ background: '#0e0e0e' }}>
+        <div
+          className="absolute inset-0 bg-cover bg-center"
+          style={{ backgroundImage: "url('/cabin_hd.png')" }}
+        />
+        <div className="absolute inset-0 bg-gradient-to-r from-black/90 to-black/20" />
+        <div className="absolute inset-0 bg-gradient-to-t from-black via-transparent to-transparent" />
+        <div className="relative z-10 flex flex-col justify-end p-12 h-full">
+          <div className="max-w-md">
+            <h1 className="text-5xl font-bold text-white mb-4 leading-tight" style={{ fontFamily: 'Outfit, sans-serif' }}>
+              Precision in every detail.
+            </h1>
+            <p className="text-lg text-white/60" style={{ fontFamily: 'Inter, sans-serif' }}>
+              Access the industry's most advanced booking platform, designed for elite travel partners managing complex itineraries.
+            </p>
+          </div>
+        </div>
+      </section>
+
+      {/* ── RIGHT: Login form ── */}
+      <section className="w-full lg:w-1/2 flex items-center justify-center p-6 relative" style={{ background: '#131313' }}>
+        {/* Glow */}
+        <div className="absolute w-96 h-96 rounded-full pointer-events-none" style={{ top: '25%', left: '50%', transform: 'translate(-50%,-50%)', background: 'rgba(220,38,38,0.08)', filter: 'blur(80px)' }} />
+
+        <div className="w-full max-w-md z-10">
+          {/* Logo */}
+          <div className="flex justify-center mb-8">
+            <Link href="/" className="flex items-center gap-3 no-underline">
+              <svg className="w-9 h-9" viewBox="0 0 24 24" fill="none" style={{ color: '#dc2626', transform: 'rotate(-45deg)' }}>
+                <path d="M21 16V14L13 9V3.5C13 2.67 12.33 2 11.5 2C10.67 2 10 2.67 10 3.5V9L2 14V16L10 13.5V19L8 20.5V22L11.5 21L15 22V20.5L13 19V13.5L21 16Z" fill="currentColor" />
+              </svg>
+              <span className="text-2xl font-black text-white tracking-wide" style={{ fontFamily: 'Outfit, sans-serif' }}>
+                Sky<span style={{ color: '#dc2626' }}>Ways</span>
+              </span>
+            </Link>
+          </div>
+
+          {/* Card */}
+          <div className="rounded-xl p-8 shadow-2xl" style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.1)', backdropFilter: 'blur(12px)' }}>
+            <div className="mb-8 text-center">
+              <h2 className="text-3xl font-semibold text-white mb-2" style={{ fontFamily: 'Outfit, sans-serif' }}>Agent Portal</h2>
+              <p className="text-sm" style={{ color: '#c8c6c5' }}>Secure access to SkyWays B2B</p>
+            </div>
+
+            <form className="space-y-5">
+              {/* Agency ID */}
+              <div>
+                <label className="block text-sm font-semibold mb-2" style={{ color: '#c8c6c5', fontFamily: 'Inter, sans-serif', letterSpacing: '0.05em' }} htmlFor="agency-id">Agency ID</label>
+                <div className="relative">
+                  <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-sm" style={{ color: '#c8c6c5' }}>badge</span>
+                  <input
+                    id="agency-id"
+                    type="text"
+                    placeholder="AE-12345"
+                    className="w-full pl-10 pr-4 py-3 rounded-lg text-white text-sm transition-all"
+                    style={{ background: '#050505', border: '1px solid rgba(255,255,255,0.1)', outline: 'none', fontFamily: 'Inter, sans-serif' }}
+                    onFocus={e => { e.target.style.borderColor = '#dc2626'; e.target.style.boxShadow = '0 0 10px rgba(220,38,38,0.2)'; }}
+                    onBlur={e => { e.target.style.borderColor = 'rgba(255,255,255,0.1)'; e.target.style.boxShadow = 'none'; }}
+                  />
+                </div>
+              </div>
+
+              {/* Email */}
+              <div>
+                <label className="block text-sm font-semibold mb-2" style={{ color: '#c8c6c5', fontFamily: 'Inter, sans-serif', letterSpacing: '0.05em' }} htmlFor="username">Email or Username</label>
+                <div className="relative">
+                  <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-sm" style={{ color: '#c8c6c5' }}>mail</span>
+                  <input
+                    id="username"
+                    type="email"
+                    placeholder="agent@agency.com"
+                    className="w-full pl-10 pr-4 py-3 rounded-lg text-white text-sm transition-all"
+                    style={{ background: '#050505', border: '1px solid rgba(255,255,255,0.1)', outline: 'none', fontFamily: 'Inter, sans-serif' }}
+                    onFocus={e => { e.target.style.borderColor = '#dc2626'; e.target.style.boxShadow = '0 0 10px rgba(220,38,38,0.2)'; }}
+                    onBlur={e => { e.target.style.borderColor = 'rgba(255,255,255,0.1)'; e.target.style.boxShadow = 'none'; }}
+                  />
+                </div>
+              </div>
+
+              {/* Password */}
+              <div>
+                <div className="flex items-center justify-between mb-2">
+                  <label className="text-sm font-semibold" style={{ color: '#c8c6c5', fontFamily: 'Inter, sans-serif', letterSpacing: '0.05em' }} htmlFor="password">Password</label>
+                  <button type="button" className="text-sm transition-colors" style={{ color: '#ffb4ab', fontFamily: 'Inter, sans-serif' }}>Forgot Password?</button>
+                </div>
+                <div className="relative">
+                  <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-sm" style={{ color: '#c8c6c5' }}>lock</span>
+                  <input
+                    id="password"
+                    type={showPassword ? 'text' : 'password'}
+                    placeholder="••••••••"
+                    className="w-full pl-10 pr-12 py-3 rounded-lg text-white text-sm transition-all"
+                    style={{ background: '#050505', border: '1px solid rgba(255,255,255,0.1)', outline: 'none', fontFamily: 'Inter, sans-serif' }}
+                    onFocus={e => { e.target.style.borderColor = '#dc2626'; e.target.style.boxShadow = '0 0 10px rgba(220,38,38,0.2)'; }}
+                    onBlur={e => { e.target.style.borderColor = 'rgba(255,255,255,0.1)'; e.target.style.boxShadow = 'none'; }}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 transition-colors"
+                    style={{ color: '#c8c6c5' }}
+                  >
+                    <span className="material-symbols-outlined text-sm">{showPassword ? 'visibility_off' : 'visibility'}</span>
+                  </button>
+                </div>
+              </div>
+
+              {/* Sign In */}
+              <div className="pt-2">
+                <Link
+                  href="/agent/login"
+                  className="w-full flex items-center justify-center gap-2 py-3 px-4 rounded-lg text-white font-semibold text-sm transition-all no-underline"
+                  style={{ background: '#dc2626', fontFamily: 'Inter, sans-serif' }}
+                  onMouseEnter={e => { e.currentTarget.style.background = '#ef4444'; e.currentTarget.style.boxShadow = '0 0 15px rgba(220,38,38,0.5)'; }}
+                  onMouseLeave={e => { e.currentTarget.style.background = '#dc2626'; e.currentTarget.style.boxShadow = 'none'; }}
+                >
+                  Sign In
+                  <span className="material-symbols-outlined text-sm">login</span>
+                </Link>
+              </div>
+            </form>
+
+            {/* Register CTA */}
+            <div className="mt-8 text-center">
+              <p className="text-sm" style={{ color: '#c8c6c5', fontFamily: 'Inter, sans-serif' }}>
+                New agency partner?{' '}
+                <Link href="/agent/login?tab=register" className="font-semibold transition-colors no-underline" style={{ color: '#ffb4ab' }}>
+                  Create an Account
+                </Link>
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <div className="absolute bottom-6 left-0 right-0 text-center">
+          <p className="text-xs" style={{ color: '#474746', fontFamily: 'Inter, sans-serif' }}>SkyWays B2B Platform © {new Date().getFullYear()}</p>
+        </div>
+      </section>
+    </main>
   );
 }

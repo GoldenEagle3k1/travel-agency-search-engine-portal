@@ -1,684 +1,295 @@
-'use client';
-import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
-import { Api, SearchStore, BookingStore, formatDate, formatTime, formatDuration, formatPrice, getStatusBadge, getAirlineIcon } from '@/utils/api';
+import React from 'react';
+import Link from 'next/link';
 
-export default function SearchPage() {
-  const router = useRouter();
-  
-  // Search parameters
-  const [tripType, setTripType] = useState('one-way');
-  const [origin, setOrigin] = useState('');
-  const [destination, setDestination] = useState('');
-  const [date, setDate] = useState('');
-  const [returnDate, setReturnDate] = useState('');
-  const [passengers, setPassengers] = useState(1);
-  const [cabinClass, setCabinClass] = useState('Economy');
-  
-  // Airports datalist
-  const [airports, setAirports] = useState([]);
-  
-  // Search state
-  const [loading, setLoading] = useState(false);
-  const [hasSearched, setHasSearched] = useState(false);
-  const [outboundFlights, setOutboundFlights] = useState([]);
-  const [returnFlights, setReturnFlights] = useState([]);
-  const [availableOutboundDates, setAvailableOutboundDates] = useState([]);
-  const [availableReturnDates, setAvailableReturnDates] = useState([]);
-  const [searchSummaryText, setSearchSummaryText] = useState('');
-  
-  // Selection state
-  const [selectedOutbound, setSelectedOutbound] = useState(null);
-  const [selectedReturn, setSelectedReturn] = useState(null);
-  
-  // Sidebar Suggestions
-  const [suggestions, setSuggestions] = useState({ outbound: [], return: [] });
-  const [showSuggestions, setShowSuggestions] = useState(false);
-  const [suggestionsError, setSuggestionsError] = useState(false);
 
-  // Load search parameters and airports on mount
-  useEffect(() => {
-    const params = SearchStore.get();
-    if (params.trip_type) setTripType(params.trip_type);
-    if (params.origin) setOrigin(params.origin);
-    if (params.destination) setDestination(params.destination);
-    if (params.date) setDate(params.date);
-    if (params.return_date) setReturnDate(params.return_date);
-    if (params.passengers) setPassengers(params.passengers);
-    if (params.class) setCabinClass(params.class);
+const LogoIcon = ({ className = "w-8 h-8" }) => (
+  <svg 
+    className={`text-red-600 transform -rotate-45 transition-transform duration-500 ${className}`} 
+    viewBox="0 0 24 24" 
+    fill="none" 
+    xmlns="http://www.w3.org/2000/svg"
+  >
+    <path 
+      d="M21 16V14L13 9V3.5C13 2.67 12.33 2 11.5 2C10.67 2 10 2.67 10 3.5V9L2 14V16L10 13.5V19L8 20.5V22L11.5 21L15 22V20.5L13 19V13.5L21 16Z" 
+      fill="currentColor"
+    />
+  </svg>
+);
 
-    if (params.origin) {
-      triggerSearch(params);
-    }
-    
-    Api.get('/flights/airports')
-      .then(data => {
-        setAirports(data.airports || []);
-      })
-      .catch(() => {});
-  }, []);
-
-  // Fetch sidebar date suggestions when origin or destination changes
-  useEffect(() => {
-    if (origin.length === 3 && destination.length === 3) {
-      fetchSuggestions(origin, destination);
-    } else {
-      setShowSuggestions(false);
-    }
-  }, [origin, destination]);
-
-  async function fetchSuggestions(orig, dest) {
-    try {
-      const data = await Api.get(`/flights/available-dates?origin=${orig}&destination=${dest}`);
-      setSuggestions({
-        outbound: data.available_outbound_dates || [],
-        return: data.available_return_dates || [],
-      });
-      setSuggestionsError(false);
-      setShowSuggestions(true);
-    } catch {
-      setSuggestionsError(true);
-      setShowSuggestions(true);
-    }
-  }
-
-  function handleFormSubmit(e) {
-    e.preventDefault();
-    const params = {
-      origin: origin.toUpperCase(),
-      destination: destination.toUpperCase(),
-      date,
-      return_date: returnDate,
-      trip_type: tripType,
-      passengers: parseInt(passengers),
-      class: cabinClass,
-    };
-    SearchStore.set(params);
-    triggerSearch(params);
-  }
-
-  async function triggerSearch(params) {
-    const { origin, destination, date, return_date, trip_type, passengers, class: cls } = params;
-    if (!origin || !destination || !date) {
-      window.showToast?.('Please fill in From, To, and Departure date', 'warning');
-      return;
-    }
-
-    setLoading(true);
-    setHasSearched(true);
-    setSelectedOutbound(null);
-    setSelectedReturn(null);
-
-    setSearchSummaryText(`${origin} → ${destination} • ${formatDate(date)} • ${passengers} pax • ${cls}`);
-
-    try {
-      const qs = new URLSearchParams({ origin, destination, date, class: cls, passengers, trip_type });
-      if (trip_type === 'round-trip' && return_date) qs.set('return_date', return_date);
-      
-      const data = await Api.get(`/flights/search?${qs}`);
-      setOutboundFlights(data.outbound_flights || []);
-      setReturnFlights(data.return_flights || []);
-      setAvailableOutboundDates(data.available_outbound_dates || []);
-      if (trip_type === 'round-trip') {
-        setAvailableReturnDates(data.available_return_dates || []);
-      } else {
-        setAvailableReturnDates([]);
-      }
-    } catch (err) {
-      window.showToast?.(err.message, 'error');
-    } finally {
-      setLoading(false);
-    }
-  }
-
-  function handleDateBadgeClick(newDate, type) {
-    let newParams = {
-      origin,
-      destination,
-      date: type === 'outbound' ? newDate : date,
-      return_date: type === 'return' ? newDate : returnDate,
-      trip_type: tripType,
-      passengers,
-      class: cabinClass,
-    };
-    if (type === 'outbound') setDate(newDate);
-    if (type === 'return') setReturnDate(newDate);
-
-    SearchStore.set(newParams);
-    triggerSearch(newParams);
-  }
-
-  function handleContinue() {
-    if (!selectedOutbound) return;
-    
-    const token = localStorage.getItem('sb_token');
-    if (!token) {
-      window.showToast?.('Please log in to continue booking', 'info');
-      router.push(`/login?redirect=${encodeURIComponent('/booking')}`);
-      return;
-    }
-
-    const priceKey = `${cabinClass.toLowerCase()}_price`;
-    const outPrice = (selectedOutbound[priceKey] || selectedOutbound.base_price || 0) * passengers;
-    const retPrice = selectedReturn ? (selectedReturn[priceKey] || selectedReturn.base_price || 0) * passengers : 0;
-
-    BookingStore.set({
-      trip_type: tripType,
-      passengers: passengers,
-      cabin_class: cabinClass,
-      outbound_flight: selectedOutbound,
-      return_flight: selectedReturn || null,
-      outbound_price: outPrice,
-      return_price: retPrice,
-      total_amount: outPrice + retPrice,
-    });
-    router.push('/booking');
-  }
-
-  const hasOutboundSelection = !!selectedOutbound;
-  const hasReturnSelection = tripType === 'round-trip' ? !!selectedReturn : true;
-  const canContinue = hasOutboundSelection && hasReturnSelection;
-
-  const priceKey = `${cabinClass.toLowerCase()}_price`;
-  const outPrice = selectedOutbound ? (selectedOutbound[priceKey] || selectedOutbound.base_price || 0) * passengers : 0;
-  const retPrice = selectedReturn ? (selectedReturn[priceKey] || selectedReturn.base_price || 0) * passengers : 0;
-  const totalPrice = outPrice + retPrice;
-
+export default function FlightSearchResultsPage() {
   return (
-    <div className="bg-brand-black text-brand-white min-h-screen font-body pt-20">
-      
-      {/* ── Page Header / Search Bar ── */}
-      <div className="py-8 bg-brand-charcoal/50 border-b border-brand-gray-dark/40">
-        <div className="container-wide mx-auto px-6">
-          <h1 className="text-2xl md:text-3xl font-black font-heading mb-6">
-            Find Your <span className="gradient-text">Perfect Flight</span>
-          </h1>
-          
-          <div className="flex flex-col lg:flex-row gap-6 items-start">
-            
-            {/* Search Form Card */}
-            <form onSubmit={handleFormSubmit} className="w-full flex-1 p-6 bg-brand-charcoal border border-brand-gray-dark/40 rounded-xl space-y-4 shadow-xl">
-              <div className="flex gap-2">
-                {['one-way', 'round-trip'].map(type => (
-                  <button
-                    key={type}
-                    type="button"
-                    className={`px-3 py-1.5 text-xs font-semibold rounded uppercase tracking-wider transition-colors duration-200 ${
-                      tripType === type
-                        ? 'bg-brand-red text-brand-white'
-                        : 'text-brand-gray-light border border-brand-gray-dark/50 hover:bg-brand-card'
-                    }`}
-                    onClick={() => {
-                      setTripType(type);
-                      setReturnDate('');
-                      setSelectedReturn(null);
-                    }}
-                  >
-                    {type === 'one-way' ? 'One Way' : 'Round Trip'}
-                  </button>
-                ))}
-              </div>
+    <>
+      {/* Material Symbols */}
+      <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet" />
+       SideNavBar <nav className="w-[280px] h-screen fixed left-0 top-0 border-r border-outline-variant bg-surface/50 backdrop-blur-xl shadow-2xl flex flex-col py-base z-50">
+<div className="px-6 py-4 mb-4">
+<h1 className="font-headline-lg text-headline-lg font-bold text-primary dark:text-primary tracking-tighter">AeroElite B2B</h1>
+<p className="text-on-surface-variant font-label-md text-label-md mt-1">ID: AG-4829</p>
+</div>
+<div className="flex-1 overflow-y-auto">
 
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-3 items-end">
-                <div className="form-group mb-0">
-                  <label className="text-[10px] text-brand-gray-light font-bold tracking-wider">From</label>
-                  <input
-                    type="text"
-                    placeholder="KHI"
-                    maxLength={3}
-                    className="w-full px-3 py-2 bg-brand-black border border-brand-gray-dark/50 rounded text-brand-white uppercase outline-none focus:border-brand-red text-sm font-semibold transition-colors"
-                    value={origin}
-                    onChange={e => setOrigin(e.target.value.toUpperCase())}
-                    list="origin-airports"
-                    required
-                  />
-                  <datalist id="origin-airports">
-                    {airports.map(a => (
-                      <option key={`orig-${a.iata_code}`} value={a.iata_code}>
-                        {a.airport_name} ({a.cities?.city_name || ''})
-                      </option>
-                    ))}
-                  </datalist>
-                </div>
+<Link href="/search"  className="flex items-center gap-4 px-6 py-3 text-primary bg-primary-container/10 border-l-4 border-primary scale-95 duration-150 transition-all" >
+<span className="material-symbols-outlined" style={{ fontVariationSettings: "'FILL' 1" }}>flight_takeoff</span>
+<span className="font-label-md text-label-md">Flight Search</span>
+</Link>
+<Link href="/manage-bookings" className="flex items-center gap-4 px-6 py-3 text-on-surface-variant hover:text-on-surface hover:bg-white/5 transition-all duration-300">
+<span className="material-symbols-outlined">event_note</span>
+<span className="font-label-md text-label-md">Itineraries</span>
+</Link>
+<Link href="/agent/dashboard" className="flex items-center gap-4 px-6 py-3 text-on-surface-variant hover:text-on-surface hover:bg-white/5 transition-all duration-300">
+<span className="material-symbols-outlined">account_balance_wallet</span>
+<span className="font-label-md text-label-md">Wallet</span>
+</Link>
+<Link href="#" className="flex items-center gap-4 px-6 py-3 text-on-surface-variant hover:text-on-surface hover:bg-white/5 transition-all duration-300">
+<span className="material-symbols-outlined">support_agent</span>
+<span className="font-label-md text-label-md">Support</span>
+</Link>
+<Link href="/settings" className="flex items-center gap-4 px-6 py-3 text-on-surface-variant hover:text-on-surface hover:bg-white/5 transition-all duration-300">
+<span className="material-symbols-outlined">settings</span>
+<span className="font-label-md text-label-md">Settings</span>
+</Link>
+</div>
+<div className="px-6 py-4 mt-auto">
+<Link href="/search"  className="w-full btn-primary py-2 rounded font-label-md text-label-md flex items-center justify-center gap-2">
+<span className="material-symbols-outlined text-[18px]">add</span>
+                New Booking
+            </Link>
+<div className="flex items-center gap-3 mt-4 pt-4 border-t border-white/10">
+<img alt="Agent Profile" className="w-10 h-10 rounded-full object-cover border border-white/20" data-alt="A professional headshot of an elite travel agent in a modern, dark-themed office setting, sharp focus, cinematic lighting, sophisticated B2B aesthetic, crisp details." src="/agent_avatar.png"/>
+<div>
+<p className="font-label-md text-label-md text-on-surface">Elite Concierge</p>
+<p className="font-mono-data text-mono-data text-on-surface-variant text-[12px]">Agent Profile</p>
+</div>
+</div>
+</div>
+</nav> TopNavBar &amp; Main Content Wrapper <div className="ml-[280px] flex-1 flex flex-col min-h-screen relative">
 
-                <div className="form-group mb-0">
-                  <label className="text-[10px] text-brand-gray-light font-bold tracking-wider">To</label>
-                  <input
-                    type="text"
-                    placeholder="DXB"
-                    maxLength={3}
-                    className="w-full px-3 py-2 bg-brand-black border border-brand-gray-dark/50 rounded text-brand-white uppercase outline-none focus:border-brand-red text-sm font-semibold transition-colors"
-                    value={destination}
-                    onChange={e => setDestination(e.target.value.toUpperCase())}
-                    list="dest-airports"
-                    required
-                  />
-                  <datalist id="dest-airports">
-                    {airports.map(a => (
-                      <option key={`dest-${a.iata_code}`} value={a.iata_code}>
-                        {a.airport_name} ({a.cities?.city_name || ''})
-                      </option>
-                    ))}
-                  </datalist>
-                </div>
+<div className="absolute top-0 left-0 w-full h-[300px] bg-gradient-to-b from-primary-container/5 to-transparent pointer-events-none"></div>
 
-                <div className="form-group mb-0">
-                  <label className="text-[10px] text-brand-gray-light font-bold tracking-wider">Departure</label>
-                  <input
-                    type="date"
-                    className="w-full px-3 py-2 bg-brand-black border border-brand-gray-dark/50 rounded text-brand-white outline-none focus:border-brand-red text-xs transition-colors"
-                    value={date}
-                    min={new Date().toISOString().split('T')[0]}
-                    onChange={e => setDate(e.target.value)}
-                    required
-                  />
-                </div>
+<header className="fixed top-0 right-0 w-[calc(100%-280px)] h-16 bg-surface/30 dark:bg-surface/30 backdrop-blur-md border-b border-outline-variant flex justify-between items-center px-gutter z-40">
+<div className="flex items-center gap-4">
+<div className="glass-panel px-4 py-1.5 rounded-full flex items-center gap-3">
+<span className="material-symbols-outlined text-primary text-[18px]">search</span>
+<div className="flex flex-col">
+<span className="font-label-md text-label-md text-on-surface leading-tight">DXB - LHR</span>
+<span className="font-mono-data text-mono-data text-on-surface-variant text-[11px] leading-tight">Oct 24 • 1 Adult • Economy</span>
+</div>
+<button className="ml-2 text-on-surface-variant hover:text-primary transition-colors duration-200">
+<span className="material-symbols-outlined text-[18px]">edit</span>
+</button>
+</div>
+</div>
+<div className="flex items-center gap-4">
+<span className="font-mono-data text-mono-data text-on-surface-variant px-3 py-1 glass-panel rounded">PKR</span>
+<button className="text-on-surface-variant hover:text-primary transition-colors duration-200">
+<span className="material-symbols-outlined">notifications</span>
+</button>
+<Link href="/confirmation"  className="text-on-surface-variant hover:text-primary transition-colors duration-200">
+<span className="material-symbols-outlined">payments</span>
+</Link>
+<button className="text-on-surface-variant hover:text-primary transition-colors duration-200">
+<span className="material-symbols-outlined">help_outline</span>
+</button>
+</div>
+</header>
 
-                {tripType === 'round-trip' ? (
-                  <div className="form-group mb-0">
-                    <label className="text-[10px] text-brand-gray-light font-bold tracking-wider">Return Date</label>
-                    <input
-                      type="date"
-                      className="w-full px-3 py-2 bg-brand-black border border-brand-gray-dark/50 rounded text-brand-white outline-none focus:border-brand-red text-xs transition-colors"
-                      value={returnDate}
-                      min={date || new Date().toISOString().split('T')[0]}
-                      onChange={e => setReturnDate(e.target.value)}
-                      required
-                    />
-                  </div>
-                ) : (
-                  <div className="hidden lg:block h-1 opacity-0">&nbsp;</div>
-                )}
+<main className="flex-1 mt-16 p-container-padding flex gap-6 max-w-[max-width] mx-auto w-full relative z-10">
 
-                <div className="form-group mb-0">
-                  <label className="text-[10px] text-brand-gray-light font-bold tracking-wider">Passengers</label>
-                  <select 
-                    className="w-full px-3 py-2 bg-brand-black border border-brand-gray-dark/50 rounded text-brand-white outline-none focus:border-brand-red text-sm font-semibold transition-colors"
-                    value={passengers} 
-                    onChange={e => setPassengers(parseInt(e.target.value))}
-                  >
-                    <option value={1}>1 Adult</option>
-                    <option value={2}>2 Adults</option>
-                    <option value={3}>3 Adults</option>
-                    <option value={4}>4 Adults</option>
-                  </select>
-                </div>
+<aside className="w-[280px] flex-shrink-0 flex flex-col gap-6">
 
-                <div className="form-group mb-0">
-                  <label className="text-[10px] text-brand-gray-light font-bold tracking-wider">Class</label>
-                  <select 
-                    className="w-full px-3 py-2 bg-brand-black border border-brand-gray-dark/50 rounded text-brand-white outline-none focus:border-brand-red text-sm font-semibold transition-colors"
-                    value={cabinClass} 
-                    onChange={e => setCabinClass(e.target.value)}
-                  >
-                    <option value="Economy">Economy</option>
-                    <option value="Business">Business</option>
-                    <option value="First">First Class</option>
-                  </select>
-                </div>
-              </div>
+<div className="glass-panel p-5 rounded-xl">
+<h3 className="font-label-md text-label-md text-on-surface mb-4 border-b border-white/10 pb-2">Stops</h3>
+<div className="space-y-3">
+<label className="flex items-center justify-between cursor-pointer group">
+<div className="flex items-center gap-3">
+<input checked="" className="form-checkbox bg-surface-dim border-white/20 text-primary rounded focus:ring-primary focus:ring-offset-surface-dim h-4 w-4" type="checkbox"/>
+<span className="font-body-md text-body-md text-on-surface group-hover:text-primary transition-colors">Direct</span>
+</div>
+<span className="font-mono-data text-mono-data text-on-surface-variant">PKR 145K</span>
+</label>
+<label className="flex items-center justify-between cursor-pointer group">
+<div className="flex items-center gap-3">
+<input checked="" className="form-checkbox bg-surface-dim border-white/20 text-primary rounded focus:ring-primary focus:ring-offset-surface-dim h-4 w-4" type="checkbox"/>
+<span className="font-body-md text-body-md text-on-surface group-hover:text-primary transition-colors">1 Stop</span>
+</div>
+<span className="font-mono-data text-mono-data text-on-surface-variant">PKR 112K</span>
+</label>
+</div>
+</div>
 
-              <button type="submit" className="w-full py-2.5 bg-brand-red text-brand-white font-bold rounded uppercase tracking-wider text-xs hover:bg-brand-red-light transition-all flex items-center justify-center gap-1 shadow shadow-brand-red/35 transform hover:-translate-y-0.5">
-                {loading ? 'Searching...' : '🔍 Search Flights'}
-              </button>
-            </form>
+<div className="glass-panel p-5 rounded-xl">
+<h3 className="font-label-md text-label-md text-on-surface mb-4 border-b border-white/10 pb-2 flex justify-between">
+                        Price Range
+                        <span className="font-mono-data text-mono-data text-primary text-[12px]">Reset</span>
+</h3>
+<div className="mt-6 px-2">
+<div className="h-1 bg-surface-variant rounded-full relative">
+<div className="absolute left-0 right-[30%] h-full bg-crimson rounded-full"></div>
+<div className="absolute left-0 top-1/2 -translate-y-1/2 w-3 h-3 bg-white rounded-full shadow-[0_0_10px_rgba(220,38,38,0.8)] border border-crimson cursor-pointer"></div>
+<div className="absolute right-[30%] top-1/2 -translate-y-1/2 w-3 h-3 bg-white rounded-full shadow-[0_0_10px_rgba(220,38,38,0.8)] border border-crimson cursor-pointer"></div>
+</div>
+<div className="flex justify-between mt-3 font-mono-data text-mono-data text-on-surface-variant text-[12px]">
+<span>112K</span>
+<span>450K+</span>
+</div>
+</div>
+</div>
 
-            {/* Sidebar Suggestions */}
-            {showSuggestions && (
-              <div className="w-full lg:w-72 p-5 bg-brand-charcoal/80 border border-brand-gray-dark/40 rounded-xl space-y-4 shadow-xl backdrop-blur-md animate-fade-in-up [animation-delay:100ms] opacity-0 [animation-fill-mode:forwards]">
-                <h3 className="text-sm font-bold font-heading">📅 Flight Schedule</h3>
-                <div className="text-xs text-brand-red-light font-bold">{origin} ➔ {destination}</div>
-                
-                {suggestionsError ? (
-                  <div className="text-xs text-brand-gray-muted italic">Failed to load schedule.</div>
-                ) : (
-                  <div className="space-y-3">
-                    <div>
-                      <div className="text-[9px] text-brand-gray-light font-bold uppercase tracking-wider mb-1">✈️ Outbound Dates</div>
-                      <div className="flex flex-wrap gap-1.5">
-                        {suggestions.outbound.length === 0 ? (
-                          <div className="text-xs text-brand-gray-muted italic">No flights scheduled</div>
-                        ) : (
-                          suggestions.outbound.map(d => {
-                            const isSelected = d === date;
-                            const parts = d.split('-');
-                            const dateObj = new Date(parts[0], parts[1] - 1, parts[2]);
-                            const formatted = dateObj.toLocaleDateString("en-US", { month: "short", day: "numeric" });
-                            return (
-                              <button
-                                key={`sug-out-${d}`}
-                                type="button"
-                                className={`px-2 py-1 text-[10px] font-semibold border rounded transition-colors ${
-                                  isSelected 
-                                    ? 'bg-brand-red border-brand-red text-brand-white' 
-                                    : 'border-brand-gray-dark text-brand-gray-light hover:text-brand-white hover:border-brand-gray-muted'
-                                }`}
-                                onClick={() => handleDateBadgeClick(d, 'outbound')}
-                              >
-                                {formatted}
-                              </button>
-                            );
-                          })
-                        )}
-                      </div>
-                    </div>
+<div className="glass-panel p-5 rounded-xl">
+<h3 className="font-label-md text-label-md text-on-surface mb-4 border-b border-white/10 pb-2">Airlines</h3>
+<div className="space-y-3">
+<label className="flex items-center justify-between cursor-pointer group">
+<div className="flex items-center gap-3">
+<input checked="" className="form-checkbox bg-surface-dim border-white/20 text-primary rounded focus:ring-primary h-4 w-4" type="checkbox"/>
+<span className="font-body-md text-body-md text-on-surface group-hover:text-primary transition-colors">Emirates</span>
+</div>
+</label>
+<label className="flex items-center justify-between cursor-pointer group">
+<div className="flex items-center gap-3">
+<input checked="" className="form-checkbox bg-surface-dim border-white/20 text-primary rounded focus:ring-primary h-4 w-4" type="checkbox"/>
+<span className="font-body-md text-body-md text-on-surface group-hover:text-primary transition-colors">Qatar Airways</span>
+</div>
+</label>
+<label className="flex items-center justify-between cursor-pointer group">
+<div className="flex items-center gap-3">
+<input className="form-checkbox bg-surface-dim border-white/20 text-primary rounded focus:ring-primary h-4 w-4" type="checkbox"/>
+<span className="font-body-md text-body-md text-on-surface group-hover:text-primary transition-colors">British Airways</span>
+</div>
+</label>
+</div>
+</div>
+</aside>
 
-                    {tripType === 'round-trip' && (
-                      <div>
-                        <div className="text-[9px] text-brand-gray-light font-bold uppercase tracking-wider mb-1">🔄 Return Dates</div>
-                        <div className="flex flex-wrap gap-1.5">
-                          {suggestions.return.length === 0 ? (
-                            <div className="text-xs text-brand-gray-muted italic">No flights scheduled</div>
-                          ) : (
-                            suggestions.return.map(d => {
-                              const isSelected = d === returnDate;
-                              const parts = d.split('-');
-                              const dateObj = new Date(parts[0], parts[1] - 1, parts[2]);
-                              const formatted = dateObj.toLocaleDateString("en-US", { month: "short", day: "numeric" });
-                              return (
-                                <button
-                                  key={`sug-ret-${d}`}
-                                  type="button"
-                                  className={`px-2 py-1 text-[10px] font-semibold border rounded transition-colors ${
-                                    isSelected 
-                                      ? 'bg-brand-red border-brand-red text-brand-white' 
-                                      : 'border-brand-gray-dark text-brand-gray-light hover:text-brand-white hover:border-brand-gray-muted'
-                                  }`}
-                                  onClick={() => handleDateBadgeClick(d, 'return')}
-                                >
-                                  {formatted}
-                                </button>
-                              );
-                            })
-                          )}
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                )}
-              </div>
-            )}
+<div className="flex-1 flex flex-col gap-6">
 
-          </div>
-        </div>
-      </div>
+<div className="glass-panel rounded-xl flex overflow-hidden">
+<button className="flex-1 py-3 px-4 flex flex-col items-center justify-center bg-white/5 border-b-2 border-primary">
+<span className="font-label-md text-label-md text-on-surface">Cheapest</span>
+<span className="font-mono-data text-mono-data text-primary text-[12px]">PKR 112,450</span>
+</button>
+<button className="flex-1 py-3 px-4 flex flex-col items-center justify-center border-l border-white/10 hover:bg-white/5 transition-colors">
+<span className="font-label-md text-label-md text-on-surface-variant">Fastest</span>
+<span className="font-mono-data text-mono-data text-on-surface-variant text-[12px]">7h 15m</span>
+</button>
+<button className="flex-1 py-3 px-4 flex flex-col items-center justify-center border-l border-white/10 hover:bg-white/5 transition-colors">
+<span className="font-label-md text-label-md text-on-surface-variant">Recommended</span>
+<span className="font-mono-data text-mono-data text-on-surface-variant text-[12px]">PKR 145,200</span>
+</button>
+</div>
 
-      {/* ── Flight Cards Listings ── */}
-      <div className="container-wide mx-auto px-6 py-12">
-        {hasSearched ? (
-          <div className="grid lg:grid-cols-12 gap-8 items-start">
-            
-            {/* Left listings column */}
-            <div className={`${(selectedOutbound || selectedReturn) ? 'lg:col-span-8' : 'lg:col-span-12'} space-y-6`}>
-              
-              {/* Outbound Leg */}
-              <div className="space-y-4 animate-fade-in-up">
-                <div className="flex justify-between items-center">
-                  <h3 className="text-lg font-bold font-heading flex items-center gap-2">
-                    <span>✈️ Outbound Flights</span>
-                    <span className="text-xs font-normal text-brand-gray-light">({outboundFlights.length} found)</span>
-                  </h3>
-                  <div className="text-xs text-brand-gray-light">{searchSummaryText}</div>
-                </div>
+<div className="flex flex-col gap-4">
 
-                {/* Available Date badge Strip */}
-                {availableOutboundDates.length > 0 && (
-                  <div className="p-4 bg-brand-charcoal/40 border border-brand-gray-dark/30 rounded-lg text-center space-y-2">
-                    <div className="text-[10px] text-brand-gray-light font-bold uppercase tracking-wider">📅 Switch Outbound Dates</div>
-                    <div className="flex flex-wrap gap-1.5 justify-center">
-                      {availableOutboundDates.map(d => {
-                        const isSelected = d === date;
-                        const parts = d.split('-');
-                        const dateObj = new Date(parts[0], parts[1] - 1, parts[2]);
-                        const formatted = dateObj.toLocaleDateString("en-US", { month: "short", day: "numeric" });
-                        return (
-                          <button
-                            key={`strip-out-${d}`}
-                            type="button"
-                            className={`px-2.5 py-1 text-xs font-semibold border rounded transition-all ${
-                              isSelected 
-                                ? 'bg-brand-red border-brand-red text-brand-white shadow-md shadow-brand-red/20' 
-                                : 'border-brand-gray-dark/50 text-brand-gray-light hover:text-brand-white hover:border-brand-gray-muted'
-                            }`}
-                            onClick={() => handleDateBadgeClick(d, 'outbound')}
-                          >
-                            {formatted}
-                          </button>
-                        );
-                      })}
-                    </div>
-                  </div>
-                )}
+<div className="glass-panel rounded-xl p-5 hover:bg-white/[0.05] transition-all duration-300 border-l-4 border-l-primary/50 hover:border-l-primary group">
+<div className="flex justify-between items-start gap-4">
 
-                {loading ? (
-                  <div className="flex justify-center py-12"><div className="spinner" /></div>
-                ) : outboundFlights.length === 0 ? (
-                  <div className="p-8 bg-brand-charcoal/20 border border-brand-gray-dark/20 rounded-xl text-center text-brand-gray-light">
-                    No flights scheduled. Please select an available date badge.
-                  </div>
-                ) : (
-                  <div className="space-y-3">
-                    {outboundFlights.map((f, idx) => {
-                      const isSelected = selectedOutbound?.flight_id === f.flight_id;
-                      const price = f[priceKey] || f.seat_price || f.base_price;
-                      return (
-                        <div
-                          key={`out-${f.flight_id}`}
-                          className={`p-5 bg-brand-charcoal/40 border rounded-xl cursor-pointer hover:border-brand-red/40 transition-all duration-300 transform hover:-translate-y-0.5 hover:shadow-lg hover:shadow-brand-red/5 flex flex-col gap-4 ${
-                            isSelected ? 'border-brand-red bg-brand-red/5 shadow-md shadow-brand-red/5' : 'border-brand-gray-dark/40'
-                          }`}
-                          onClick={() => setSelectedOutbound(f)}
-                          style={{ animationDelay: `${idx * 50}ms` }}
-                        >
-                          <div className="flex justify-between items-center">
-                            <div className="flex items-center gap-3">
-                              <span className="text-2xl">{getAirlineIcon(f.airline_code)}</span>
-                              <div>
-                                <div className="text-sm font-bold">{f.airline_name}</div>
-                                <div className="text-xs text-brand-gray-light">{f.flight_number}</div>
-                              </div>
-                            </div>
-                            <div className="text-right">
-                              <div className="text-xl font-extrabold text-brand-red-light font-heading">{formatPrice(price)}</div>
-                              <div className="text-[10px] text-brand-gray-light uppercase font-semibold">{cabinClass} / pax</div>
-                            </div>
-                          </div>
+<div className="flex flex-col gap-4 flex-1">
+<div className="flex items-center gap-3">
+<div className="w-8 h-8 rounded bg-white flex items-center justify-center overflow-hidden">
+<img alt="Emirates Logo" className="w-6 h-6 object-contain" data-alt="A minimalist, highly stylized vector logo of an airline on a clean white background, deep obsidian and crimson tones, sleek corporate B2B travel aesthetic." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBfbXabO41CwOBRrT-LtPD68KgY7nQZDKlabvfbY38xZfkagcSjMc0-WCtC9e5u8O8b8L-F_VBp8MMQuy_Xj8Hf1vrGGFZmV_vbE588LwEsQN18-ZRM4wOj4stXShHkY7jIwRXRqkt5jDFY1IU7ArHogEHWtrxNIcF3GAvP7pyyhH5a31iXbV0-GJUsUy0BcpQex-qwgdbazRCy28KXKYLaC2nrazliwefexZxEHTwaCRKloPFkYB5N"/>
+</div>
+<div>
+<h4 className="font-label-md text-label-md text-on-surface">Emirates</h4>
+<p className="font-mono-data text-mono-data text-on-surface-variant text-[12px]">EK 007 • Boeing 777</p>
+</div>
+<div className="ml-4 px-2 py-0.5 bg-surface-dim border-l-2 border-crimson rounded text-[10px] font-label-md text-on-surface uppercase tracking-wider">Economy</div>
+</div>
 
-                          <div className="grid grid-cols-3 items-center text-center">
-                            <div className="text-left">
-                              <div className="text-xl font-black font-heading text-brand-white">{f.origin_iata}</div>
-                              <div className="text-[10px] text-brand-gray-light truncate">{f.origin_city}</div>
-                              <div className="text-xs font-bold mt-1 text-brand-white/80">{formatTime(f.departure_time)}</div>
-                            </div>
-                            <div className="flex flex-col items-center">
-                              <div className="text-[10px] text-brand-gray-light font-semibold mb-1">{formatDuration(f.duration)}</div>
-                              <div className="w-full h-px bg-gradient-to-r from-brand-red to-brand-gray-muted relative">
-                                <span className="absolute -top-1 left-0 text-[6px] text-brand-red">●</span>
-                                <span className="absolute -top-1 right-0 text-[6px] text-brand-gray-muted">●</span>
-                              </div>
-                              <span className="text-xs text-brand-red mt-1 animate-pulse">✈</span>
-                            </div>
-                            <div className="text-right">
-                              <div className="text-xl font-black font-heading text-brand-white">{f.dest_iata}</div>
-                              <div className="text-[10px] text-brand-gray-light truncate">{f.dest_city}</div>
-                              <div className="text-xs font-bold mt-1 text-brand-white/80">{formatTime(f.arrival_time)}</div>
-                            </div>
-                          </div>
+<div className="flex items-center gap-6 mt-2">
+<div className="flex flex-col items-end w-20">
+<span className="font-headline-md text-headline-md text-on-surface">10:30</span>
+<span className="font-mono-data text-mono-data text-on-surface-variant">DXB</span>
+</div>
+<div className="flex-1 flex flex-col items-center relative min-w-[150px]">
+<span className="font-mono-data text-mono-data text-on-surface-variant text-[11px] mb-1">7h 15m</span>
+<div className="w-full h-[2px] bg-surface-variant relative flex items-center justify-between">
+<div className="w-2 h-2 rounded-full bg-surface-variant"></div>
+<div className="absolute left-1/2 -translate-x-1/2 top-1/2 -translate-y-1/2 text-on-surface-variant">
+<span className="material-symbols-outlined text-[16px] rotate-90 group-hover:text-primary transition-colors">flight</span>
+</div>
+<div className="w-2 h-2 rounded-full bg-surface-variant"></div>
+</div>
+<span className="font-mono-data text-mono-data text-on-surface-variant text-[11px] mt-1 text-primary">Direct</span>
+</div>
+<div className="flex flex-col items-start w-20">
+<span className="font-headline-md text-headline-md text-on-surface">14:45</span>
+<span className="font-mono-data text-mono-data text-on-surface-variant">LHR</span>
+</div>
+</div>
+<div className="flex gap-2 mt-2">
+<span className="px-2 py-1 rounded bg-surface/50 border border-white/5 font-mono-data text-[11px] text-on-surface-variant flex items-center gap-1">
+<span className="material-symbols-outlined text-[14px]">work</span> 30kg Baggage
+                                    </span>
+<span className="px-2 py-1 rounded bg-surface/50 border border-white/5 font-mono-data text-[11px] text-on-surface-variant flex items-center gap-1">
+<span className="material-symbols-outlined text-[14px]">receipt_long</span> Refundable
+                                    </span>
+</div>
+</div>
 
-                          <div className="flex justify-between items-center text-xs border-t border-brand-gray-dark/30 pt-3 mt-1">
-                            <div className="flex gap-2">
-                              <span dangerouslySetInnerHTML={{ __html: getStatusBadge(f.status) }} />
-                              <span className="px-2 py-0.5 rounded bg-brand-red/10 border border-brand-red/20 text-brand-red-light text-[10px] font-bold uppercase">
-                                {f.seats_available || f.available_seats || '0'} Left
-                              </span>
-                            </div>
-                            <div className="text-brand-gray-light text-[10px]">{formatDate(f.departure_time)}</div>
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                )}
-              </div>
+<div className="flex flex-col items-end justify-center min-w-[160px] pl-4 border-l border-white/10 h-full py-2">
+<span className="font-mono-data text-mono-data text-on-surface-variant text-[12px]">Total Price</span>
+<span className="font-headline-md text-headline-md text-crimson font-bold mt-1 tracking-tight">PKR 145,200</span>
+<span className="font-mono-data text-mono-data text-on-surface-variant text-[10px] mb-4">incl. taxes &amp; fees</span>
+<Link href="/booking"  className="btn-primary w-full py-2 px-4 rounded font-label-md text-label-md">Select</Link>
+</div>
+</div>
+</div>
 
-              {/* Return Leg */}
-              {tripType === 'round-trip' && (
-                <div className="space-y-4 animate-fade-in-up [animation-delay:100ms] opacity-0 [animation-fill-mode:forwards] mt-8">
-                  <h3 className="text-lg font-bold font-heading">🔄 Return Flights</h3>
-                  
-                  {/* Return dates strip */}
-                  {availableReturnDates.length > 0 && (
-                    <div className="p-4 bg-brand-charcoal/40 border border-brand-gray-dark/30 rounded-lg text-center space-y-2">
-                      <div className="text-[10px] text-brand-gray-light font-bold uppercase tracking-wider">📅 Switch Return Dates</div>
-                      <div className="flex flex-wrap gap-1.5 justify-center">
-                        {availableReturnDates.map(d => {
-                          const isSelected = d === returnDate;
-                          const parts = d.split('-');
-                          const dateObj = new Date(parts[0], parts[1] - 1, parts[2]);
-                          const formatted = dateObj.toLocaleDateString("en-US", { month: "short", day: "numeric" });
-                          return (
-                            <button
-                              key={`strip-ret-${d}`}
-                              type="button"
-                              className={`px-2.5 py-1 text-xs font-semibold border rounded transition-all ${
-                                isSelected 
-                                  ? 'bg-brand-red border-brand-red text-brand-white shadow-md shadow-brand-red/20' 
-                                  : 'border-brand-gray-dark/50 text-brand-gray-light hover:text-brand-white hover:border-brand-gray-muted'
-                              }`}
-                              onClick={() => handleDateBadgeClick(d, 'return')}
-                            >
-                              {formatted}
-                            </button>
-                          );
-                        })}
-                      </div>
-                    </div>
-                  )}
+<div className="glass-panel rounded-xl p-5 hover:bg-white/[0.05] transition-all duration-300 border-l-4 border-l-transparent hover:border-l-primary/50 group">
+<div className="flex justify-between items-start gap-4">
 
-                  {loading ? (
-                    <div className="flex justify-center py-12"><div className="spinner" /></div>
-                  ) : returnFlights.length === 0 ? (
-                    <div className="p-8 bg-brand-charcoal/20 border border-brand-gray-dark/20 rounded-xl text-center text-brand-gray-light">
-                      No flights scheduled. Please select an available date badge.
-                    </div>
-                  ) : (
-                    <div className="space-y-3">
-                      {returnFlights.map((f, idx) => {
-                        const isSelected = selectedReturn?.flight_id === f.flight_id;
-                        const price = f[priceKey] || f.seat_price || f.base_price;
-                        return (
-                          <div
-                            key={`ret-${f.flight_id}`}
-                            className={`p-5 bg-brand-charcoal/40 border rounded-xl cursor-pointer hover:border-brand-red/40 transition-all duration-300 transform hover:-translate-y-0.5 hover:shadow-lg hover:shadow-brand-red/5 flex flex-col gap-4 ${
-                              isSelected ? 'border-brand-red bg-brand-red/5 shadow-md shadow-brand-red/5' : 'border-brand-gray-dark/40'
-                            }`}
-                            onClick={() => setSelectedReturn(f)}
-                            style={{ animationDelay: `${idx * 50}ms` }}
-                          >
-                            <div className="flex justify-between items-center">
-                              <div className="flex items-center gap-3">
-                                <span className="text-2xl">{getAirlineIcon(f.airline_code)}</span>
-                                <div>
-                                  <div className="text-sm font-bold">{f.airline_name}</div>
-                                  <div className="text-xs text-brand-gray-light">{f.flight_number}</div>
-                                </div>
-                              </div>
-                              <div className="text-right">
-                                <div className="text-xl font-extrabold text-brand-red-light font-heading">{formatPrice(price)}</div>
-                                <div className="text-[10px] text-brand-gray-light uppercase font-semibold">{cabinClass} / pax</div>
-                              </div>
-                            </div>
+<div className="flex flex-col gap-4 flex-1">
+<div className="flex items-center gap-3">
+<div className="w-8 h-8 rounded bg-white flex items-center justify-center overflow-hidden">
+<img alt="Qatar Airways Logo" className="w-6 h-6 object-contain" data-alt="A minimalist, highly stylized vector logo of Qatar Airways on a clean white background, deep obsidian and crimson tones, sleek corporate B2B travel aesthetic." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCazkF3C4PNhr-hcSL4GgUdyLbsFSZBwY3U3LeIjIk-cWWOZT-EL6l0lv3ORMsTGiG2v1Rt194t6O7aIOeh9S00YLvlKX7CUhLdfDEgMboaYTiuudYO-zGoQqbg5m7oibpyYe8WSlBs8IXJt0D6IzFD7XvoooFCkDRrHdQNLr_X-Qc4LADwhvoB90_aMVd7B4v6VxSP4RpeC4djsNT55WOIwT6s587RFFj74zFf3eHG9eDegqATUs1d"/>
+</div>
+<div>
+<h4 className="font-label-md text-label-md text-on-surface">Qatar Airways</h4>
+<p className="font-mono-data text-mono-data text-on-surface-variant text-[12px]">QR 1021 • Airbus A350</p>
+</div>
+<div className="ml-4 px-2 py-0.5 bg-surface-dim border-l-2 border-crimson rounded text-[10px] font-label-md text-on-surface uppercase tracking-wider">Economy</div>
+</div>
 
-                            <div className="grid grid-cols-3 items-center text-center">
-                              <div className="text-left">
-                                <div className="text-xl font-black font-heading text-brand-white">{f.origin_iata}</div>
-                                <div className="text-[10px] text-brand-gray-light truncate">{f.origin_city}</div>
-                                <div className="text-xs font-bold mt-1 text-brand-white/80">{formatTime(f.departure_time)}</div>
-                              </div>
-                              <div className="flex flex-col items-center">
-                                <div className="text-[10px] text-brand-gray-light font-semibold mb-1">{formatDuration(f.duration)}</div>
-                                <div className="w-full h-px bg-gradient-to-r from-brand-red to-brand-gray-muted relative">
-                                  <span className="absolute -top-1 left-0 text-[6px] text-brand-red">●</span>
-                                  <span className="absolute -top-1 right-0 text-[6px] text-brand-gray-muted">●</span>
-                                </div>
-                                <span className="text-xs text-brand-red mt-1 animate-pulse">✈</span>
-                              </div>
-                              <div className="text-right">
-                                <div className="text-xl font-black font-heading text-brand-white">{f.dest_iata}</div>
-                                <div className="text-[10px] text-brand-gray-light truncate">{f.dest_city}</div>
-                                <div className="text-xs font-bold mt-1 text-brand-white/80">{formatTime(f.arrival_time)}</div>
-                              </div>
-                            </div>
+<div className="flex items-center gap-6 mt-2">
+<div className="flex flex-col items-end w-20">
+<span className="font-headline-md text-headline-md text-on-surface">08:15</span>
+<span className="font-mono-data text-mono-data text-on-surface-variant">DXB</span>
+</div>
+<div className="flex-1 flex flex-col items-center relative min-w-[150px]">
+<span className="font-mono-data text-mono-data text-on-surface-variant text-[11px] mb-1">9h 40m</span>
+<div className="w-full h-[2px] bg-surface-variant relative flex items-center justify-between">
+<div className="w-2 h-2 rounded-full bg-surface-variant"></div>
 
-                            <div className="flex justify-between items-center text-xs border-t border-brand-gray-dark/30 pt-3 mt-1">
-                              <div className="flex gap-2">
-                                <span dangerouslySetInnerHTML={{ __html: getStatusBadge(f.status) }} />
-                                <span className="px-2 py-0.5 rounded bg-brand-red/10 border border-brand-red/20 text-brand-red-light text-[10px] font-bold uppercase">
-                                  {f.seats_available || f.available_seats || '0'} Left
-                                </span>
-                              </div>
-                              <div className="text-brand-gray-light text-[10px]">{formatDate(f.departure_time)}</div>
-                            </div>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  )}
-                </div>
-              )}
-            </div>
+<div className="absolute left-1/2 -translate-x-1/2 top-1/2 -translate-y-1/2 w-2 h-2 rounded-full bg-crimson shadow-[0_0_8px_rgba(220,38,38,0.8)] z-10"></div>
+<div className="absolute left-1/2 -translate-x-1/2 -top-4 text-[10px] font-mono-data text-on-surface-variant">DOH</div>
+<div className="w-2 h-2 rounded-full bg-surface-variant"></div>
+</div>
+<span className="font-mono-data text-mono-data text-on-surface-variant text-[11px] mt-1 text-on-surface-variant">1 Stop (1h 45m)</span>
+</div>
+<div className="flex flex-col items-start w-20">
+<span className="font-headline-md text-headline-md text-on-surface">14:55</span>
+<span className="font-mono-data text-mono-data text-on-surface-variant">LHR</span>
+<span className="text-[10px] text-error mt-0.5">+1 Day</span>
+</div>
+</div>
+<div className="flex gap-2 mt-2">
+<span className="px-2 py-1 rounded bg-surface/50 border border-white/5 font-mono-data text-[11px] text-on-surface-variant flex items-center gap-1">
+<span className="material-symbols-outlined text-[14px]">work</span> 25kg Baggage
+                                    </span>
+</div>
+</div>
 
-            {/* Right Booking Summary panel */}
-            {(selectedOutbound || selectedReturn) && (
-              <div className="lg:col-span-4 sticky top-24 animate-fade-in-up [animation-delay:150ms] opacity-0 [animation-fill-mode:forwards]">
-                <div className="p-6 bg-brand-charcoal border border-brand-gray-dark/40 rounded-xl space-y-4 shadow-xl">
-                  <h4 className="text-base font-bold font-heading uppercase tracking-wider border-b border-brand-gray-dark/40 pb-2">
-                    🧾 Booking Summary
-                  </h4>
-                  
-                  {selectedOutbound && (
-                    <div className="space-y-1">
-                      <div className="text-xs text-brand-red-light font-bold">OUTBOUND</div>
-                      <div className="text-sm font-semibold">{selectedOutbound.flight_number} · {selectedOutbound.origin_iata}➔{selectedOutbound.dest_iata}</div>
-                      <div className="text-xs text-brand-gray-light">{formatTime(selectedOutbound.departure_time)} · {formatPrice(outPrice)}</div>
-                    </div>
-                  )}
-
-                  {selectedReturn && (
-                    <div className="space-y-1 pt-3 border-t border-brand-gray-dark/20">
-                      <div className="text-xs text-brand-red-light font-bold">RETURN</div>
-                      <div className="text-sm font-semibold">{selectedReturn.flight_number} · {selectedReturn.origin_iata}➔{selectedReturn.dest_iata}</div>
-                      <div className="text-xs text-brand-gray-light">{formatTime(selectedReturn.departure_time)} · {formatPrice(retPrice)}</div>
-                    </div>
-                  )}
-
-                  <div className="border-t border-brand-gray-dark/40 pt-3 flex justify-between items-center">
-                    <span className="text-sm font-semibold text-brand-gray-light">Total Price</span>
-                    <span className="text-2xl font-black text-brand-red-light font-heading">{formatPrice(totalPrice)}</span>
-                  </div>
-
-                  <button
-                    onClick={handleContinue}
-                    disabled={!canContinue}
-                    className="w-full py-3 bg-brand-red text-brand-white font-bold rounded uppercase tracking-wider text-xs hover:bg-brand-red-light disabled:opacity-40 disabled:cursor-not-allowed transition-all shadow shadow-brand-red/25 transform hover:-translate-y-0.5 mt-2"
-                  >
-                    Continue to Seat Selection →
-                  </button>
-                  <p className="text-center text-[10px] text-brand-gray-light">No hidden fees. Free cancellation within 24h.</p>
-                </div>
-              </div>
-            )}
-
-          </div>
-        ) : (
-          <div className="py-20 text-center space-y-3 max-w-sm mx-auto">
-            <div className="text-6xl animate-bounce">🔍</div>
-            <h3 className="text-lg font-bold font-heading">Search for flights above</h3>
-            <p className="text-xs text-brand-gray-light">Enter your origin, destination and travel dates to find available flights</p>
-          </div>
-        )}
-      </div>
-
-    </div>
+<div className="flex flex-col items-end justify-center min-w-[160px] pl-4 border-l border-white/10 h-full py-2">
+<span className="font-mono-data text-mono-data text-on-surface-variant text-[12px]">Total Price</span>
+<span className="font-headline-md text-headline-md text-crimson font-bold mt-1 tracking-tight">PKR 112,450</span>
+<span className="font-mono-data text-mono-data text-on-surface-variant text-[10px] mb-4">incl. taxes &amp; fees</span>
+<Link href="/booking"  className="btn-ghost w-full py-2 px-4 rounded font-label-md text-label-md text-on-surface">Select</Link>
+</div>
+</div>
+</div>
+</div>
+</div>
+</main>
+</div>
+    </>
   );
 }

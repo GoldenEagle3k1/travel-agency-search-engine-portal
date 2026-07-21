@@ -1,8 +1,9 @@
 'use client';
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
-import { useState } from 'react';
+import { usePathname, useRouter } from 'next/navigation';
+import { useState, useEffect } from 'react';
 import { useAuth } from '@/context/AuthContext';
+import { getCurrency, setCurrency } from '@/utils/api';
 
 const LogoIcon = () => (
   <svg 
@@ -19,13 +20,73 @@ const LogoIcon = () => (
 );
 
 export default function Navbar() {
+  const router = useRouter();
   const { isLoggedIn, passenger, isAdmin, logout } = useAuth();
   const pathname = usePathname();
+
+  // Suppress navbar on auth, confirmation, booking and transactional screens
+  const transactionalPaths = [
+    '/login',
+    '/agent/login',
+    '/agent/register',
+    '/register',
+    '/confirmation',
+    '/booking',
+    '/manage-bookings'
+  ];
+  const isTransactionalPage = transactionalPaths.includes(pathname);
+  if (isTransactionalPage) return null;
+
   const [menuOpen, setMenuOpen] = useState(false);
+  const [currency, setCurrencyState] = useState('PKR');
+
+  // Agent states
+  const [isAgent, setIsAgent] = useState(false);
+  const [agentName, setAgentName] = useState('');
+  const [notifCount, setNotifCount] = useState(0);
+
+  useEffect(() => {
+    setCurrencyState(getCurrency());
+
+    // Check agent state from localStorage
+    const agentToken = localStorage.getItem('agent_token');
+    const agentProf = localStorage.getItem('agent_profile');
+    if (agentToken && agentProf) {
+      setIsAgent(true);
+      try {
+        const prof = JSON.parse(agentProf);
+        setAgentName(prof.agency_name || 'Agent');
+      } catch (_) {}
+      
+      // Fetch unread count for badge
+      fetch(`/api/agents/notifications/unread-count`, {
+        headers: { Authorization: `Bearer ${agentToken}` }
+      })
+        .then(res => res.json())
+        .then(data => setNotifCount(data.unread_count || 0))
+        .catch(() => {});
+    }
+  }, [pathname]);
+
+  function handleCurrencyChange(e) {
+    const c = e.target.value;
+    setCurrency(c);
+    setCurrencyState(c);
+    // Refresh page to apply conversion
+    window.location.reload();
+  }
+
+  function handleAgentLogout() {
+    ['agent_token', 'agent_profile', 'agent_wallet'].forEach(k => localStorage.removeItem(k));
+    setIsAgent(false);
+    setAgentName('');
+    router.push('/');
+  }
 
   const navLinks = [
     { href: '/', label: 'Home', id: '/' },
     { href: '/search', label: 'Flights', id: '/search' },
+    { href: '/agent', label: 'Agent Portal', id: '/agent' },
   ];
 
   return (
@@ -42,7 +103,7 @@ export default function Navbar() {
       {/* Hamburger Menu Toggle (Mobile) */}
       <button 
         onClick={() => setMenuOpen(!menuOpen)} 
-        className="nav-mobile-trigger flex flex-col gap-1.5 p-2 text-brand-gray-light hover:text-brand-white focus:outline-none transition-colors"
+        className="nav-mobile-trigger flex flex-col gap-1.5 p-2 text-brand-gray-light hover:text-brand-white focus:outline-none transition-colors md:hidden"
         aria-label="Toggle navigation menu"
       >
         <span className={`w-6 h-0.5 bg-current transform transition-transform duration-300 ${menuOpen ? 'rotate-45 translate-y-2' : ''}`} />
@@ -51,7 +112,7 @@ export default function Navbar() {
       </button>
 
       {/* Nav Links (Desktop) */}
-      <ul className="nav-desktop items-center gap-1 list-none font-body">
+      <ul className="nav-desktop items-center gap-1 list-none font-body hidden md:flex">
         {navLinks.map(link => {
           const isActive = pathname === link.id || (pathname.startsWith(link.id + '/') && link.id !== '/');
           return (
@@ -71,9 +132,47 @@ export default function Navbar() {
         })}
       </ul>
 
-      {/* Auth buttons (Desktop) */}
-      <div className="nav-desktop items-center gap-3 font-body">
-        {isLoggedIn ? (
+      {/* Currency & Auth buttons (Desktop) */}
+      <div className="nav-desktop items-center gap-4 font-body hidden md:flex">
+        
+        {/* Currency Selector */}
+        <div className="flex items-center gap-1 bg-brand-charcoal border border-brand-gray-dark/50 rounded px-2.5 py-1 text-xs">
+          <span className="text-brand-gray-light font-bold">Currency:</span>
+          <select 
+            value={currency} 
+            onChange={handleCurrencyChange} 
+            className="bg-transparent border-none text-brand-white font-bold outline-none cursor-pointer"
+            aria-label="Preferred currency selector"
+          >
+            <option value="PKR">PKR</option>
+            <option value="USD">USD</option>
+            <option value="AED">AED</option>
+            <option value="GBP">GBP</option>
+          </select>
+        </div>
+
+        {isAgent ? (
+          <>
+            <Link 
+              href="/agent/dashboard" 
+              className="px-3 py-1.5 text-sm font-medium text-brand-gray-light hover:text-brand-white flex items-center gap-1.5"
+              id="nav-agent-dashboard"
+            >
+              💼 {agentName}
+              {notifCount > 0 && (
+                <span className="bg-brand-red text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full">
+                  {notifCount}
+                </span>
+              )}
+            </Link>
+            <button 
+              onClick={handleAgentLogout} 
+              className="px-4 py-1.5 text-xs font-bold uppercase tracking-wider text-brand-gray-light hover:text-brand-white border border-brand-gray-muted/30 hover:border-brand-red rounded-md transition-all duration-200"
+            >
+              Logout Agent
+            </button>
+          </>
+        ) : isLoggedIn ? (
           <>
             {isAdmin && (
               <Link 
@@ -105,7 +204,7 @@ export default function Navbar() {
               Login
             </Link>
             <Link 
-              href="/login?tab=register" 
+              href="/agent/register" 
               className="px-4 py-2 text-sm font-semibold text-brand-white bg-gradient-to-r from-brand-red-dark to-brand-red hover:from-brand-red hover:to-brand-red-light rounded-md shadow-lg shadow-brand-red/20 hover:shadow-xl hover:shadow-brand-red/35 transform hover:-translate-y-0.5 transition-all duration-200"
             >
               Register
@@ -138,8 +237,41 @@ export default function Navbar() {
 
         <div className="h-px bg-brand-gray-dark/50 my-1" />
 
-        <div className="flex flex-col gap-2">
-          {isLoggedIn ? (
+        <div className="flex flex-col gap-4">
+          
+          {/* Mobile Currency Selector */}
+          <div className="flex justify-between items-center bg-brand-black rounded px-4 py-2 text-sm border border-brand-gray-dark/50">
+            <span className="text-brand-gray-light font-bold">Preferred Currency</span>
+            <select 
+              value={currency} 
+              onChange={handleCurrencyChange} 
+              className="bg-transparent border-none text-brand-white font-bold outline-none cursor-pointer"
+              aria-label="Preferred currency selector mobile"
+            >
+              <option value="PKR">PKR</option>
+              <option value="USD">USD</option>
+              <option value="AED">AED</option>
+              <option value="GBP">GBP</option>
+            </select>
+          </div>
+
+          {isAgent ? (
+            <>
+              <Link 
+                href="/agent/dashboard" 
+                onClick={() => setMenuOpen(false)}
+                className="w-full text-center px-4 py-2.5 text-base font-medium text-brand-gray-light hover:text-brand-white"
+              >
+                💼 {agentName}
+              </Link>
+              <button 
+                onClick={() => { setMenuOpen(false); handleAgentLogout(); }} 
+                className="w-full text-center px-4 py-2.5 text-sm font-bold uppercase tracking-wider text-brand-gray-light hover:text-brand-white border border-brand-gray-muted/30 rounded-md transition-colors"
+              >
+                Logout Agent
+              </button>
+            </>
+          ) : isLoggedIn ? (
             <>
               {isAdmin && (
                 <Link 
@@ -174,7 +306,7 @@ export default function Navbar() {
                 Login
               </Link>
               <Link 
-                href="/login?tab=register" 
+                href="/agent/register" 
                 onClick={() => setMenuOpen(false)}
                 className="w-full text-center px-4 py-2.5 text-base font-semibold text-brand-white bg-brand-red rounded-md shadow-lg shadow-brand-red/20"
               >

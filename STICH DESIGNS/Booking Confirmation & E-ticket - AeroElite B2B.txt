@@ -1,0 +1,316 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Booking Confirmation - AeroElite Portal</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=Outfit:wght@400;500;600;700;800;900&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "secondary-container": "#474746",
+                        "on-tertiary-container": "#f8f8f8",
+                        "on-surface-variant": "#e6bdb8",
+                        "surface-bright": "#3a3939",
+                        "on-primary-container": "#fff6f5",
+                        "on-error": "#690005",
+                        "on-secondary-fixed": "#1c1b1b",
+                        "on-primary-fixed": "#410002",
+                        "inverse-primary": "#bf0715",
+                        "surface-container-high": "#2a2a2a",
+                        "on-tertiary-fixed-variant": "#454747",
+                        "on-primary": "#690005",
+                        "primary-container": "#dc2626",
+                        "on-secondary-container": "#b7b5b4",
+                        "secondary-fixed": "#e5e2e1",
+                        "inverse-on-surface": "#313030",
+                        "error-container": "#93000a",
+                        "outline-variant": "#5c403c",
+                        "surface-container-low": "#1c1b1b",
+                        "surface": "#131313",
+                        "on-secondary-fixed-variant": "#474746",
+                        "secondary": "#c8c6c5",
+                        "outline": "#ac8884",
+                        "surface-container": "#201f1f",
+                        "on-tertiary": "#2f3131",
+                        "surface-container-highest": "#353534",
+                        "surface-variant": "#353534",
+                        "inverse-surface": "#e5e2e1",
+                        "primary-fixed-dim": "#ffb4ab",
+                        "surface-container-lowest": "#0e0e0e",
+                        "tertiary-fixed-dim": "#c6c6c7",
+                        "primary-fixed": "#ffdad6",
+                        "on-surface": "#e5e2e1",
+                        "surface-tint": "#ffb4ab",
+                        "tertiary-fixed": "#e2e2e2",
+                        "on-secondary": "#313030",
+                        "primary": "#ffb4ab",
+                        "on-background": "#e5e2e1",
+                        "on-error-container": "#ffdad6",
+                        "on-primary-fixed-variant": "#93000b",
+                        "error": "#ffb4ab",
+                        "tertiary-container": "#717272",
+                        "tertiary": "#c6c6c7",
+                        "surface-dim": "#131313",
+                        "background": "#131313",
+                        "secondary-fixed-dim": "#c8c6c5",
+                        "on-tertiary-fixed": "#1a1c1c"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.125rem",
+                        "lg": "0.25rem",
+                        "xl": "0.5rem",
+                        "full": "0.75rem"
+                    },
+                    "spacing": {
+                        "section-gap": "48px",
+                        "base": "8px",
+                        "max-width": "1440px",
+                        "gutter": "16px",
+                        "container-padding": "24px"
+                    },
+                    "fontFamily": {
+                        "body-md": ["Inter"],
+                        "mono-data": ["Inter"],
+                        "label-md": ["Inter"],
+                        "headline-lg-mobile": ["Outfit"],
+                        "headline-md": ["Outfit"],
+                        "display-lg": ["Outfit"],
+                        "body-lg": ["Inter"],
+                        "headline-lg": ["Outfit"]
+                    },
+                    "fontSize": {
+                        "body-md": ["16px", {"lineHeight": "24px", "fontWeight": "400"}],
+                        "mono-data": ["14px", {"lineHeight": "20px", "fontWeight": "500"}],
+                        "label-md": ["14px", {"lineHeight": "20px", "letterSpacing": "0.05em", "fontWeight": "600"}],
+                        "headline-lg-mobile": ["24px", {"lineHeight": "32px", "fontWeight": "600"}],
+                        "headline-md": ["24px", {"lineHeight": "32px", "fontWeight": "600"}],
+                        "display-lg": ["48px", {"lineHeight": "56px", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                        "body-lg": ["18px", {"lineHeight": "28px", "fontWeight": "400"}],
+                        "headline-lg": ["32px", {"lineHeight": "40px", "letterSpacing": "-0.01em", "fontWeight": "600"}]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        body { background-color: #0A0A0A; }
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+        }
+        .neon-glow {
+            box-shadow: 0 0 10px rgba(220, 38, 38, 0.5), 0 0 20px rgba(220, 38, 38, 0.3);
+        }
+        .neon-text-glow {
+            text-shadow: 0 0 8px rgba(220, 38, 38, 0.6);
+        }
+        .btn-primary {
+            background-color: #DC2626;
+            color: #ffffff;
+            transition: all 0.3s ease;
+        }
+        .btn-primary:hover {
+            box-shadow: 0 0 15px rgba(220, 38, 38, 0.6);
+            transform: translateY(-1px);
+        }
+        .btn-ghost {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            color: #ffffff;
+            transition: all 0.3s ease;
+        }
+        .btn-ghost:hover {
+            background: rgba(255, 255, 255, 0.1);
+            border-color: rgba(255, 255, 255, 0.3);
+        }
+        .dashed-line {
+            border-top: 2px dashed rgba(255,255,255,0.1);
+        }
+        
+        /* Barcode emulation */
+        .barcode-bars {
+            display: flex;
+            height: 48px;
+            gap: 2px;
+            align-items: flex-end;
+        }
+        .barcode-bar { background-color: rgba(255,255,255,0.8); }
+        .w-1 { width: 1px; } .w-2 { width: 2px; } .w-3 { width: 3px; } .w-4 { width: 4px; }
+        
+        /* Cutouts for ticket effect */
+        .ticket-cutout {
+            position: absolute;
+            width: 32px;
+            height: 32px;
+            background-color: #0A0A0A;
+            border-radius: 50%;
+            top: -16px;
+        }
+        .ticket-cutout-left { left: -16px; border-right: 1px solid rgba(255, 255, 255, 0.1); }
+        .ticket-cutout-right { right: -16px; border-left: 1px solid rgba(255, 255, 255, 0.1); }
+    </style>
+</head>
+<body class="text-on-surface font-body-md antialiased overflow-x-hidden min-h-screen flex">
+<!-- Intent implies focused transaction/confirmation context. Suppressing SideNav and TopNav as per rules. -->
+<!-- Main Content Area -->
+<main class="flex-1 w-full min-h-screen py-section-gap px-container-padding flex flex-col items-center">
+<div class="w-full max-w-4xl mx-auto flex flex-col gap-8">
+<!-- Success Header -->
+<div class="flex flex-col items-center text-center gap-4 mb-8">
+<div class="w-20 h-20 rounded-full bg-primary-container/20 flex items-center justify-center neon-glow border border-primary-container/50">
+<span class="material-symbols-outlined text-[48px] text-primary-container" style="font-variation-settings: 'FILL' 1;">check_circle</span>
+</div>
+<div>
+<h1 class="font-headline-lg text-headline-lg text-on-surface mb-2">Booking Successful</h1>
+<p class="font-body-lg text-body-lg text-on-surface-variant">Your reservation has been confirmed and ticketed.</p>
+</div>
+</div>
+<!-- E-Ticket Layout -->
+<div class="flex flex-col lg:flex-row gap-6 w-full">
+<!-- Main Ticket -->
+<div class="flex-1 glass-panel rounded-xl flex flex-col overflow-hidden relative">
+<!-- Ticket Header -->
+<div class="p-6 border-b border-white/10 flex justify-between items-center bg-white/5">
+<div class="flex items-center gap-4">
+<div class="w-12 h-12 rounded bg-white flex items-center justify-center p-1">
+<!-- Emirates logo abstraction -->
+<div class="text-red-600 font-headline-md font-bold text-center leading-none">E</div>
+</div>
+<div>
+<div class="font-label-md text-label-md text-on-surface-variant uppercase">Flight</div>
+<div class="font-headline-md text-headline-md text-on-surface">EK-622</div>
+</div>
+</div>
+<div class="text-right">
+<div class="font-label-md text-label-md text-on-surface-variant uppercase">Booking Ref (PNR)</div>
+<div class="font-display-lg text-display-lg text-primary-container neon-text-glow">X7Y8Z9</div>
+</div>
+</div>
+<!-- Ticket Body -->
+<div class="p-8 flex flex-col gap-8 relative">
+<!-- Passenger Info -->
+<div class="flex justify-between items-start">
+<div>
+<div class="font-label-md text-label-md text-on-surface-variant uppercase mb-1">Passenger</div>
+<div class="font-headline-lg text-headline-lg text-on-surface">Ahmed S.</div>
+</div>
+<div class="text-right">
+<div class="font-label-md text-label-md text-on-surface-variant uppercase mb-1">Class</div>
+<div class="inline-block px-3 py-1 rounded bg-surface border-l-4 border-primary-container font-mono-data text-mono-data text-on-surface">Business</div>
+</div>
+</div>
+<!-- Routing Visualization -->
+<div class="flex items-center justify-between w-full py-4 relative">
+<!-- DXB -->
+<div class="flex flex-col gap-1 w-1/3">
+<span class="font-display-lg text-display-lg text-on-surface leading-none">DXB</span>
+<span class="font-body-md text-body-md text-on-surface-variant">Dubai Intl</span>
+<span class="font-mono-data text-mono-data text-on-surface mt-2">14:30<br/>24 Oct</span>
+</div>
+<!-- Connecting Line -->
+<div class="flex-1 flex flex-col items-center justify-center relative px-4">
+<span class="material-symbols-outlined text-primary-container absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-[#0A0A0A] px-2 z-10" style="font-variation-settings: 'FILL' 1;">flight_takeoff</span>
+<div class="w-full h-px bg-white/20 relative">
+<div class="absolute left-0 top-1/2 -translate-y-1/2 w-2 h-2 rounded-full border border-white bg-transparent"></div>
+<div class="absolute right-0 top-1/2 -translate-y-1/2 w-2 h-2 rounded-full border border-white bg-transparent"></div>
+</div>
+<span class="font-label-md text-label-md text-on-surface-variant mt-4">7h 15m</span>
+</div>
+<!-- LHR -->
+<div class="flex flex-col gap-1 w-1/3 text-right">
+<span class="font-display-lg text-display-lg text-on-surface leading-none">LHR</span>
+<span class="font-body-md text-body-md text-on-surface-variant">London Heathrow</span>
+<span class="font-mono-data text-mono-data text-on-surface mt-2">18:45<br/>24 Oct</span>
+</div>
+</div>
+<!-- Grid Details -->
+<div class="grid grid-cols-4 gap-4 bg-white/5 p-4 rounded-lg border border-white/5">
+<div>
+<div class="font-label-md text-label-md text-on-surface-variant uppercase mb-1">Terminal</div>
+<div class="font-headline-md text-headline-md text-on-surface">3</div>
+</div>
+<div>
+<div class="font-label-md text-label-md text-on-surface-variant uppercase mb-1">Gate</div>
+<div class="font-headline-md text-headline-md text-on-surface">A12</div>
+</div>
+<div>
+<div class="font-label-md text-label-md text-on-surface-variant uppercase mb-1">Seat</div>
+<div class="font-headline-md text-headline-md text-on-surface">3C</div>
+</div>
+<div>
+<div class="font-label-md text-label-md text-on-surface-variant uppercase mb-1">Baggage</div>
+<div class="font-headline-md text-headline-md text-on-surface">40kg</div>
+</div>
+</div>
+</div>
+<!-- Perforated separator -->
+<div class="relative w-full h-px">
+<div class="absolute inset-0 dashed-line"></div>
+<div class="ticket-cutout ticket-cutout-left"></div>
+<div class="ticket-cutout ticket-cutout-right"></div>
+</div>
+<!-- Ticket Footer / Barcode -->
+<div class="p-6 bg-white/5 flex items-center justify-between">
+<div class="font-mono-data text-mono-data text-on-surface-variant tracking-widest">
+                            ETKT 176 9876543210
+                        </div>
+<div class="barcode-bars">
+<div class="barcode-bar w-2"></div><div class="barcode-bar w-1"></div><div class="barcode-bar w-3"></div><div class="barcode-bar w-1"></div><div class="barcode-bar w-2"></div>
+<div class="barcode-bar w-4"></div><div class="barcode-bar w-1"></div><div class="barcode-bar w-2"></div><div class="barcode-bar w-1"></div><div class="barcode-bar w-3"></div>
+<div class="barcode-bar w-2"></div><div class="barcode-bar w-1"></div><div class="barcode-bar w-4"></div><div class="barcode-bar w-1"></div><div class="barcode-bar w-2"></div>
+<div class="barcode-bar w-1"></div><div class="barcode-bar w-3"></div><div class="barcode-bar w-2"></div><div class="barcode-bar w-1"></div><div class="barcode-bar w-2"></div>
+</div>
+</div>
+</div>
+<!-- Sidebar Actions & Next Steps -->
+<div class="w-full lg:w-80 flex flex-col gap-6">
+<!-- Primary Actions -->
+<div class="flex flex-col gap-3">
+<button class="w-full flex items-center justify-center gap-2 py-3 px-4 rounded btn-primary font-label-md text-label-md">
+<span class="material-symbols-outlined">download</span>
+                            Download PDF E-ticket
+                        </button>
+<button class="w-full flex items-center justify-center gap-2 py-3 px-4 rounded btn-ghost font-label-md text-label-md">
+<span class="material-symbols-outlined">print</span>
+                            Print Receipt
+                        </button>
+</div>
+<!-- What's Next Card -->
+<div class="glass-panel rounded-xl p-6 flex flex-col gap-4">
+<h3 class="font-headline-md text-headline-md text-on-surface">What's Next</h3>
+<div class="flex flex-col gap-4">
+<div class="flex gap-3">
+<span class="material-symbols-outlined text-primary-container" style="font-variation-settings: 'FILL' 1;">luggage</span>
+<div>
+<div class="font-label-md text-label-md text-on-surface">Baggage Policy</div>
+<div class="font-body-md text-body-md text-on-surface-variant text-sm mt-1">Review prohibited items and dimensions before arriving.</div>
+</div>
+</div>
+<div class="flex gap-3">
+<span class="material-symbols-outlined text-primary-container" style="font-variation-settings: 'FILL' 1;">how_to_reg</span>
+<div>
+<div class="font-label-md text-label-md text-on-surface">Online Check-in</div>
+<div class="font-body-md text-body-md text-on-surface-variant text-sm mt-1">Opens 48 hours before departure. We'll send a reminder.</div>
+</div>
+</div>
+</div>
+<div class="w-full h-px bg-white/10 my-2"></div>
+<a class="flex items-center gap-2 font-label-md text-label-md text-primary hover:text-primary-container transition-colors" href="#">
+                            Manage This Booking
+                            <span class="material-symbols-outlined text-sm">arrow_forward</span>
+</a>
+</div>
+</div>
+</div>
+</div>
+</main>
+</body></html>

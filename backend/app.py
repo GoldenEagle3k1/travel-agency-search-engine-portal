@@ -34,12 +34,16 @@ def create_app():
     from routes.bookings import bookings_bp
     from routes.admin    import admin_bp
     from routes.reports  import reports_bp
+    from routes.duffel   import duffel_bp
+    from routes.agents   import agents_bp
 
     app.register_blueprint(auth_bp,     url_prefix="/api/auth")
     app.register_blueprint(flights_bp,  url_prefix="/api/flights")
     app.register_blueprint(bookings_bp, url_prefix="/api/bookings")
     app.register_blueprint(admin_bp,    url_prefix="/api/admin")
     app.register_blueprint(reports_bp,  url_prefix="/api/reports")
+    app.register_blueprint(duffel_bp,   url_prefix="/api/duffel")
+    app.register_blueprint(agents_bp,   url_prefix="/api/agents")
 
     # ── Health check ─────────────────────────────────────────
     @app.route("/api/health")

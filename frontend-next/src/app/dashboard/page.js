@@ -1,471 +1,291 @@
-'use client';
-import { useState, useEffect } from 'react';
+import React from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
-import { Api, Auth, formatPrice, formatDate, formatTime, formatDateTime, getStatusBadge } from '@/utils/api';
-import { useAuth } from '@/context/AuthContext';
 
-export default function DashboardPage() {
-  const router = useRouter();
-  const { isLoggedIn, logout } = useAuth();
-  
-  // Local states
-  const [profile, setProfile] = useState(null);
-  const [bookings, setBookings] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [filter, setFilter] = useState('all');
-  
-  // Boarding Pass Modal states
-  const [modalOpen, setModalOpen] = useState(false);
-  const [selectedBookingId, setSelectedBookingId] = useState(null);
-  const [modalPasses, setModalPasses] = useState([]);
-  const [modalLoading, setModalLoading] = useState(false);
 
-  // Load bookings and user profile
-  useEffect(() => {
-    const token = localStorage.getItem('sb_token');
-    if (!token) {
-      router.push('/login');
-      return;
-    }
+const LogoIcon = ({ className = "w-8 h-8" }) => (
+  <svg 
+    className={`text-red-600 transform -rotate-45 transition-transform duration-500 ${className}`} 
+    viewBox="0 0 24 24" 
+    fill="none" 
+    xmlns="http://www.w3.org/2000/svg"
+  >
+    <path 
+      d="M21 16V14L13 9V3.5C13 2.67 12.33 2 11.5 2C10.67 2 10 2.67 10 3.5V9L2 14V16L10 13.5V19L8 20.5V22L11.5 21L15 22V20.5L13 19V13.5L21 16Z" 
+      fill="currentColor"
+    />
+  </svg>
+);
 
-    const pax = Auth.getPassenger();
-    setProfile(pax);
-
-    loadBookingsData();
-  }, []);
-
-  async function loadBookingsData() {
-    try {
-      const data = await Api.get('/bookings/my', true);
-      setBookings(data.bookings || []);
-    } catch (err) {
-      window.showToast?.(err.message, 'error');
-    } finally {
-      setLoading(false);
-    }
-  }
-
-  // Calculate statistics
-  const confirmedCount = bookings.filter(b => b.booking_status === 'Confirmed').length;
-  const cancelledCount = bookings.filter(b => b.booking_status === 'Cancelled').length;
-  const roundTripsCount = bookings.filter(b => b.trip_type === 'round-trip').length;
-  
-  const totalSpent = bookings
-    .filter(b => b.payments?.payment_status === 'Success')
-    .reduce((sum, b) => sum + (b.total_amount || 0), 0);
-
-  // Upcoming flight calculation
-  function getUpcomingFlight() {
-    const confirmedBookings = bookings.filter(b => b.booking_status === 'Confirmed');
-    if (confirmedBookings.length === 0) return null;
-
-    let nextFlight = null;
-    let nextDeparture = null;
-    const now = new Date();
-
-    confirmedBookings.forEach(b => {
-      const ob = b.outbound;
-      if (ob && ob.departure_time) {
-        const depDate = new Date(ob.departure_time);
-        if (depDate > now) {
-          if (!nextDeparture || depDate < nextDeparture) {
-            nextDeparture = depDate;
-            nextFlight = b;
-          }
-        }
-      }
-    });
-
-    return nextFlight;
-  }
-
-  const upcomingFlight = getUpcomingFlight();
-
-  // Loyalty Tier calculation
-  function getLoyaltyTier(confirmedCount) {
-    if (confirmedCount >= 5) return { name: 'Gold Tier Member', color: 'text-yellow-500 border-yellow-500/30 bg-yellow-500/10' };
-    if (confirmedCount >= 2) return { name: 'Silver Tier Member', color: 'text-brand-red-light border-brand-red/20 bg-brand-red/10' };
-    return { name: 'Bronze Tier Member', color: 'text-brand-gray-light border-brand-gray-dark/50 bg-brand-charcoal' };
-  }
-
-  const loyalty = getLoyaltyTier(confirmedCount);
-
-  // Cancel booking handler
-  async function handleCancelBooking(bookingId) {
-    if (!confirm('Are you sure you want to cancel this booking? Refund policy applies.')) return;
-    
-    try {
-      const res = await Api.put(`/bookings/${bookingId}/cancel`, {}, true);
-      window.showToast?.(res.message, 'success');
-      await loadBookingsData();
-    } catch (err) {
-      window.showToast?.(err.message, 'error');
-    }
-  }
-
-  // View boarding passes modal trigger
-  async function handleViewBoardingPasses(bookingId) {
-    setSelectedBookingId(bookingId);
-    setModalLoading(true);
-    setModalOpen(true);
-    setModalPasses([]);
-
-    try {
-      const data = await Api.get(`/bookings/${bookingId}/boarding-passes`, true);
-      setModalPasses(data.boarding_passes || []);
-    } catch (err) {
-      window.showToast?.(`Failed to load passes: ${err.message}`, 'error');
-    } finally {
-      setModalLoading(false);
-    }
-  }
-
-  // Apply dropdown filters
-  const filteredBookings = filter === 'all' 
-    ? bookings 
-    : bookings.filter(b => b.booking_status?.toLowerCase() === filter.toLowerCase());
-
-  if (loading) {
-    return (
-      <div className="page-wrapper flex-center bg-brand-black min-h-screen">
-        <div className="spinner" />
-      </div>
-    );
-  }
-
+export default function CustomerPassengerDashboardPage() {
   return (
-    <div className="bg-brand-black text-brand-white min-h-screen font-body pt-20">
-      
-      {/* ── Dashboard Header ── */}
-      <div className="py-8 bg-brand-charcoal/50 border-b border-brand-gray-dark/40">
-        <div className="container-wide mx-auto px-6">
-          <h1 className="text-2xl md:text-3xl font-black font-heading">
-            My <span className="gradient-text font-black">Dashboard</span>
-          </h1>
-          <p className="text-xs text-brand-gray-light mt-1">Manage your bookings, boarding passes, and account details</p>
-        </div>
-      </div>
-
-      <div className="container-wide mx-auto px-6 py-12">
-        <div className="grid lg:grid-cols-12 gap-8 items-start">
-          
-          {/* Left Panel: Profile and Stats */}
-          <div className="lg:col-span-4 space-y-6">
-            
-            {/* Profile Card */}
-            <div className="p-6 bg-brand-charcoal border border-brand-gray-dark/40 rounded-xl shadow-xl space-y-4">
-              <div className="flex items-center gap-4">
-                <div className="w-14 h-14 rounded-full bg-gradient-to-br from-brand-red-dark to-brand-red flex items-center justify-center text-2xl shadow-lg shadow-brand-red/25">
-                  👤
-                </div>
-                <div>
-                  <div className="text-lg font-bold font-heading">
-                    {profile ? `${profile.first_name} ${profile.last_name}` : '—'}
-                  </div>
-                  <div className="text-xs text-brand-gray-light">
-                    {profile ? profile.email : '—'}
-                  </div>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-4 pt-3 border-t border-brand-gray-dark/30 text-xs">
-                <div>
-                  <div className="text-[10px] text-brand-gray-light font-bold uppercase tracking-wider">Phone</div>
-                  <div className="font-semibold text-brand-white mt-0.5">{profile?.phone || '—'}</div>
-                </div>
-                <div>
-                  <div className="text-[10px] text-brand-gray-light font-bold uppercase tracking-wider">Passport</div>
-                  <div className="font-semibold text-brand-white mt-0.5">{profile?.passport_no || '—'}</div>
-                </div>
-              </div>
-
-              <div className="h-px bg-brand-gray-dark/40 my-3" />
-              
-              <div className="space-y-4">
-                <div>
-                  <div className="text-[10px] text-brand-gray-light font-bold uppercase tracking-wider mb-1">
-                    📅 Next Flight
-                  </div>
-                  {upcomingFlight ? (
-                    <div className="p-3 bg-brand-black/40 border border-brand-gray-dark/50 rounded-lg">
-                      <div className="text-xs text-brand-red-light font-bold">
-                        ✈️ {upcomingFlight.outbound?.flight_number} ({upcomingFlight.outbound?.origin_ap?.iata_code} ➔ {upcomingFlight.outbound?.dest_ap?.iata_code})
-                      </div>
-                      <div className="text-[10px] text-brand-gray-light mt-1">
-                        Departs: {formatDate(upcomingFlight.outbound?.departure_time)} at {formatTime(upcomingFlight.outbound?.departure_time)}
-                      </div>
-                    </div>
-                  ) : (
-                    <div className="text-xs text-brand-gray-muted italic">No upcoming flights scheduled</div>
-                  )}
-                </div>
-
-                <div>
-                  <div className="text-[10px] text-brand-gray-light font-bold uppercase tracking-wider mb-1">
-                    🌟 Loyalty Status
-                  </div>
-                  <div className={`inline-block px-3 py-1 rounded-full border text-xs font-bold ${loyalty.color}`}>
-                    {loyalty.name}
-                  </div>
-                </div>
-              </div>
-
-              <div className="flex flex-col gap-2 mt-4">
-                <Link 
-                  href="/settings" 
-                  className="w-full text-center py-2 bg-brand-black/40 border border-brand-gray-muted/30 text-brand-gray-light hover:text-brand-white hover:border-brand-red hover:bg-brand-charcoal/50 rounded-lg text-xs font-bold uppercase tracking-wider transition-all"
-                >
-                  ⚙️ Edit Settings
-                </Link>
-                <button 
-                  className="w-full py-2 border border-brand-gray-muted/30 text-brand-gray-light hover:text-brand-white hover:border-brand-red rounded-lg text-xs font-bold uppercase tracking-wider transition-all" 
-                  onClick={() => logout()}
-                >
-                  Logout
-                </button>
-              </div>
+    <>
+      {/* Material Symbols */}
+      <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet" />
+       SideNavBar (from JSON) <nav className="w-[280px] h-screen fixed left-0 top-0 bg-surface dark:bg-surface bg-surface/10 backdrop-blur-xl border-r border-outline-variant shadow-2xl flex flex-col h-full py-base z-50 nav-hide-mobile">
+<div className="px-6 py-4 flex items-center gap-4 mb-6">
+<div className="w-10 h-10 rounded-lg bg-surface-bright flex items-center justify-center overflow-hidden">
+<div className="flex items-center justify-center gap-2 font-heading text-2xl font-black text-brand-white tracking-wide">
+    <LogoIcon />
+    <span>Sky<span className="text-brand-red">Ways</span></span>
+</div>
+</div>
+<div>
+<h1 className="font-headline-md text-headline-md font-bold text-primary dark:text-primary tracking-tight">SkyLink Premium</h1>
+<p className="font-label-md text-label-md text-on-surface-variant">Elite Agent Portal</p>
+</div>
+</div>
+<div className="px-4 mb-6">
+<Link href="/search"  className="w-full bg-primary-container hover:bg-primary text-on-primary-container font-label-md text-label-md py-3 rounded-lg shadow-[0_0_24px_rgba(220,38,38,0.3)] hover:shadow-[0_0_32px_rgba(220,38,38,0.5)] transition-all flex items-center justify-center gap-2 scale-95 duration-150 ease-in-out hover:scale-100">
+<span className="material-symbols-outlined" style={{ fontVariationSettings: "'FILL' 1" }}>add</span>
+                New Booking
+            </Link>
+</div>
+<ul className="flex-1 px-3 space-y-1 overflow-y-auto">
+<li>
+<Link href="/dashboard"  className="flex items-center gap-3 px-4 py-3 rounded-lg text-primary font-bold border-r-2 border-primary bg-primary-container/10 scale-95 duration-150 ease-in-out" >
+<span className="material-symbols-outlined">dashboard</span>
+<span className="font-label-md text-label-md">Dashboard</span>
+</Link>
+</li>
+<li>
+<Link href="/search"  className="flex items-center gap-3 px-4 py-3 rounded-lg text-on-surface-variant font-medium hover:bg-surface-variant/20 hover:text-primary transition-colors scale-95 duration-150 ease-in-out" >
+<span className="material-symbols-outlined">flight_takeoff</span>
+<span className="font-label-md text-label-md">Search Flights</span>
+</Link>
+</li>
+<li>
+<Link href="/booking"  className="flex items-center gap-3 px-4 py-3 rounded-lg text-on-surface-variant font-medium hover:bg-surface-variant/20 hover:text-primary transition-colors scale-95 duration-150 ease-in-out" >
+<span className="material-symbols-outlined">edit_calendar</span>
+<span className="font-label-md text-label-md">Manage Bookings</span>
+</Link>
+</li>
+<li>
+<Link href="#" className="flex items-center gap-3 px-4 py-3 rounded-lg text-on-surface-variant font-medium hover:bg-surface-variant/20 hover:text-primary transition-colors scale-95 duration-150 ease-in-out" >
+<span className="material-symbols-outlined">handyman</span>
+<span className="font-label-md text-label-md">Agent Tools</span>
+</Link>
+</li>
+<li>
+<Link href="#" className="flex items-center gap-3 px-4 py-3 rounded-lg text-on-surface-variant font-medium hover:bg-surface-variant/20 hover:text-primary transition-colors scale-95 duration-150 ease-in-out" >
+<span className="material-symbols-outlined">assessment</span>
+<span className="font-label-md text-label-md">Reports</span>
+</Link>
+</li>
+</ul>
+<div className="mt-auto px-3 border-t border-outline-variant/30 pt-4 space-y-1">
+<Link href="#" className="flex items-center gap-3 px-4 py-3 rounded-lg text-on-surface-variant font-medium hover:bg-surface-variant/20 hover:text-primary transition-colors scale-95 duration-150 ease-in-out" >
+<span className="material-symbols-outlined">settings</span>
+<span className="font-label-md text-label-md">Settings</span>
+</Link>
+<Link href="#" className="flex items-center gap-3 px-4 py-3 rounded-lg text-on-surface-variant font-medium hover:bg-surface-variant/20 hover:text-primary transition-colors scale-95 duration-150 ease-in-out" >
+<span className="material-symbols-outlined">contact_support</span>
+<span className="font-label-md text-label-md">Support</span>
+</Link>
+</div>
+</nav> TopNavBar (from JSON) <header className="h-16 fixed top-0 right-0 left-[280px] z-40 bg-surface/30 dark:bg-surface/30 backdrop-blur-md border-b border-outline-variant flex justify-between items-center px-container-padding content-shift-mobile nav-hide-mobile">
+<div className="flex items-center gap-8">
+<div className="font-headline-md text-headline-md font-black tracking-tighter text-primary">SkyLink B2B</div>
+<nav className="hidden lg:flex items-center gap-6">
+<Link href="#" className="font-label-md text-label-md text-on-surface-variant hover:text-primary transition-all active:opacity-80 transition-opacity"  style={{color: "#ffb4ab"}}>Global Availability</Link>
+<Link href="#" className="font-label-md text-label-md text-on-surface-variant hover:text-primary transition-all active:opacity-80 transition-opacity" >Fare Rules</Link>
+<Link href="#" className="font-label-md text-label-md text-on-surface-variant hover:text-primary transition-all active:opacity-80 transition-opacity" >Tax Tables</Link>
+</nav>
+</div>
+<div className="flex items-center gap-6">
+<div className="text-primary dark:text-primary font-mono-data text-mono-data font-semibold bg-surface-bright/30 px-3 py-1 rounded-md border border-outline-variant/50">
+                Currency: USD
             </div>
+<div className="flex items-center gap-3">
+<button className="text-on-surface-variant hover:text-primary transition-all active:opacity-80 transition-opacity w-8 h-8 flex items-center justify-center rounded-full hover:bg-surface-bright/20">
+<span className="material-symbols-outlined">notifications</span>
+</button>
+<button className="text-on-surface-variant hover:text-primary transition-all active:opacity-80 transition-opacity w-8 h-8 flex items-center justify-center rounded-full hover:bg-surface-bright/20">
+<span className="material-symbols-outlined">help_outline</span>
+</button>
+</div>
+<div className="flex items-center gap-3 border-l border-outline-variant/30 pl-6 cursor-pointer hover:opacity-80 transition-opacity">
+<span className="font-label-md text-label-md text-on-surface">Agent Profile</span>
+<div className="w-8 h-8 rounded-full overflow-hidden border border-outline-variant/50">
+<img alt="Agent Avatar" className="w-full h-full object-cover" data-alt="A professional headshot of a travel agent in a dimly lit, high-end modern office. Subtle red accent lighting highlights the silhouette. Ultra-realistic, 8k resolution, cinematic lighting." src="/agent_avatar.png"/>
+</div>
+</div>
+</div>
+</header> Main Content Area <main className="ml-[280px] w-full pt-[80px] px-container-padding max-w-max-width mx-auto pb-12 content-shift-mobile">
 
-            {/* Booking Stats cards */}
-            <div className="grid grid-cols-2 gap-4">
-              <div className="p-4 bg-brand-charcoal/50 border border-brand-gray-dark/30 rounded-xl shadow flex items-center gap-3">
-                <div className="text-2xl">📋</div>
-                <div>
-                  <div className="text-xl font-extrabold">{bookings.length}</div>
-                  <div className="text-[9px] uppercase font-bold text-brand-gray-light tracking-wider">Total</div>
-                </div>
-              </div>
-              <div className="p-4 bg-brand-charcoal/50 border border-brand-gray-dark/30 rounded-xl shadow flex items-center gap-3">
-                <div className="text-2xl text-green-500">✅</div>
-                <div>
-                  <div className="text-xl font-extrabold">{confirmedCount}</div>
-                  <div className="text-[9px] uppercase font-bold text-brand-gray-light tracking-wider">Confirmed</div>
-                </div>
-              </div>
-              <div className="p-4 bg-brand-charcoal/50 border border-brand-gray-dark/30 rounded-xl shadow flex items-center gap-3">
-                <div className="text-2xl text-yellow-500">↔️</div>
-                <div>
-                  <div className="text-xl font-extrabold">{roundTripsCount}</div>
-                  <div className="text-[9px] uppercase font-bold text-brand-gray-light tracking-wider">Round Trips</div>
-                </div>
-              </div>
-              <div className="p-4 bg-brand-charcoal/50 border border-brand-gray-dark/30 rounded-xl shadow flex items-center gap-3">
-                <div className="text-2xl text-brand-red-light">💰</div>
-                <div>
-                  <div className="text-base font-extrabold tracking-tight">{formatPrice(totalSpent)}</div>
-                  <div className="text-[9px] uppercase font-bold text-brand-gray-light tracking-wider">Spent</div>
-                </div>
-              </div>
-            </div>
-          </div>
+<div className="mb-section-gap pt-8">
+<h1 className="font-display-lg text-display-lg text-on-surface mb-2">Welcome back, Alexander</h1>
+<p className="font-body-lg text-body-lg text-on-surface-variant">Here is an overview of your upcoming travel and elite status.</p>
+</div>
 
-          {/* Right Panel: Bookings list */}
-          <div className="lg:col-span-8 space-y-6">
-            <div className="flex justify-between items-center">
-              <h3 className="text-lg font-bold font-heading">My Bookings</h3>
-              <select
-                className="px-3 py-1.5 bg-brand-charcoal border border-brand-gray-dark/50 rounded text-brand-white text-xs font-semibold focus:outline-none"
-                value={filter}
-                onChange={e => setFilter(e.target.value)}
-              >
-                <option value="all">All</option>
-                <option value="Confirmed">Confirmed</option>
-                <option value="Cancelled">Cancelled</option>
-              </select>
-            </div>
+<div className="grid grid-cols-1 md:grid-cols-3 gap-gutter mb-section-gap">
 
-            <div className="space-y-4">
-              {filteredBookings.length === 0 ? (
-                <div className="p-12 bg-brand-charcoal/30 border border-brand-gray-dark/30 rounded-xl text-center space-y-3 max-w-sm mx-auto">
-                  <div className="text-5xl">✈️</div>
-                  <h3 className="text-sm font-bold font-heading">No bookings found</h3>
-                  <p className="text-xs text-brand-gray-light">Your flight records will show here once booked.</p>
-                  <Link href="/search" className="w-full inline-block py-2 bg-brand-red text-brand-white font-bold rounded uppercase tracking-wider text-xs hover:bg-brand-red-light">
-                    Search Flights
-                  </Link>
-                </div>
-              ) : (
-                filteredBookings.map((b, idx) => {
-                  const ob = b.outbound || {};
-                  const obAl = ob.airlines || {};
-                  const obOr = ob.origin_ap || {};
-                  const obDs = ob.dest_ap || {};
-                  const isConfirmed = b.booking_status === 'Confirmed';
-                  
-                  return (
-                    <div 
-                      key={`booking-${b.booking_id}`} 
-                      className="p-5 bg-brand-charcoal/40 border border-brand-gray-dark/30 hover:border-brand-red/35 rounded-xl space-y-4 transition-all duration-300"
-                    >
-                      <div className="flex justify-between items-center">
-                        <div className="flex items-center gap-2">
-                          <span className="font-bold font-heading text-brand-white">{b.booking_reference}</span>
-                          <span className="px-2 py-0.5 rounded bg-brand-red/10 border border-brand-red/20 text-brand-red-light text-[9px] font-bold uppercase tracking-wider">
-                            {b.trip_type}
-                          </span>
-                        </div>
-                        <div dangerouslySetInnerHTML={{ __html: getStatusBadge(b.booking_status) }} />
-                      </div>
+<div className="glass-card rounded-xl p-6 relative overflow-hidden group">
+<div className="absolute inset-0 bg-gradient-to-br from-surface-bright/5 to-transparent pointer-events-none"></div>
+<div className="flex justify-between items-start mb-8 relative z-10">
+<div>
+<p className="font-label-md text-label-md text-on-surface-variant mb-1">Total Spent (YTD)</p>
+<h2 className="font-headline-lg text-headline-lg text-on-surface font-mono-data">$14,250<span className="text-on-surface-variant text-headline-md">.00</span></h2>
+</div>
+<div className="w-10 h-10 rounded-full bg-surface-bright/20 flex items-center justify-center text-primary">
+<span className="material-symbols-outlined">payments</span>
+</div>
+</div>
+<div className="relative z-10 flex items-center gap-2">
+<span className="material-symbols-outlined text-green-500 text-sm">trending_up</span>
+<span className="font-mono-data text-mono-data text-green-500">+12% vs last year</span>
+</div>
+</div>
 
-                      {/* Outbound */}
-                      <div className="flex gap-4 items-center">
-                        <span className="text-2xl">✈️</span>
-                        <div className="flex-1">
-                          <div className="text-sm font-bold">{obAl.airline_name} · {ob.flight_number}</div>
-                          <div className="flex items-center gap-2 mt-1">
-                            <span className="text-base font-black font-heading text-brand-white">{obOr.iata_code}</span>
-                            <span className="text-brand-red">→</span>
-                            <span className="text-base font-black font-heading text-brand-white">{obDs.iata_code}</span>
-                          </div>
-                          <div className="text-xs text-brand-gray-light mt-0.5">
-                            {formatDateTime(ob.departure_time)} · {obOr.cities?.city_name} ➔ {obDs.cities?.city_name}
-                          </div>
-                        </div>
-                        <div className="text-right">
-                          <div className="text-base font-extrabold text-brand-red-light font-heading">{formatPrice(b.total_amount)}</div>
-                          <div className="text-[10px] text-brand-gray-light">
-                            {b.num_passengers || 1} passenger{b.num_passengers > 1 ? 's' : ''}
-                          </div>
-                        </div>
-                      </div>
+<div className="glass-card rounded-xl p-6 relative overflow-hidden group border-l-4 border-l-primary-container">
 
-                      {/* Return leg check */}
-                      {b.trip_type === 'round-trip' && b.return_f && (
-                        <div className="flex gap-4 items-center pt-3 border-t border-dashed border-brand-gray-dark/30 mt-1">
-                          <span className="text-2xl">🔄</span>
-                          <div>
-                            <div className="text-sm font-bold">{b.return_f.flight_number} (Return Flight)</div>
-                            <div className="text-xs text-brand-gray-light mt-0.5">
-                              {formatDateTime(b.return_f.departure_time)}
-                            </div>
-                          </div>
-                        </div>
-                      )}
+<div className="flex justify-between items-start mb-8 relative z-10">
+<div>
+<p className="font-label-md text-label-md text-on-surface-variant mb-1">Current Status</p>
+<div className="inline-flex items-center gap-2 bg-primary-container/20 border border-primary-container/50 px-3 py-1 rounded-full mt-1">
+<span className="w-2 h-2 rounded-full bg-primary-container neon-glow-red"></span>
+<span className="font-label-md text-label-md text-primary font-bold tracking-widest uppercase">Crimson Elite</span>
+</div>
+</div>
+<div className="w-10 h-10 rounded-full bg-primary-container/10 flex items-center justify-center text-primary-container">
+<span className="material-symbols-outlined" style={{ fontVariationSettings: "'FILL' 1" }}>workspace_premium</span>
+</div>
+</div>
+<div className="relative z-10 w-full bg-surface-bright/30 h-1.5 rounded-full overflow-hidden">
+<div className="bg-primary-container h-full w-[85%] rounded-full shadow-[0_0_10px_rgba(220,38,38,0.8)]"></div>
+</div>
+<p className="font-mono-data text-mono-data text-on-surface-variant mt-3 text-right">8,500 pts to next tier</p>
+</div>
 
-                      {/* Actions footer */}
-                      <div className="flex justify-between items-center text-xs pt-3 border-t border-brand-gray-dark/30 mt-1">
-                        <div className="text-brand-gray-light text-[10px]">Booked {formatDate(b.booking_date)}</div>
-                        <div className="flex gap-2">
-                          {isConfirmed && (
-                            <>
-                              <button className="px-3 py-1.5 border border-brand-gray-dark/50 text-brand-white text-[10px] font-bold rounded uppercase tracking-wider hover:border-brand-white transition-colors" onClick={() => handleViewBoardingPasses(b.booking_id)}>
-                                🎫 Boarding Pass
-                              </button>
-                              <button className="px-3 py-1.5 bg-brand-red/10 border border-brand-red/20 text-brand-red-light text-[10px] font-bold rounded uppercase hover:bg-brand-red/20 transition-colors" onClick={() => handleCancelBooking(b.booking_id)}>
-                                Cancel
-                              </button>
-                            </>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-                  );
-                })
-              )}
-            </div>
+<div className="glass-card rounded-xl p-6 relative overflow-hidden group">
+<div className="absolute -right-10 -top-10 w-40 h-40 bg-primary-container/10 rounded-full blur-[40px] pointer-events-none"></div>
+<div className="flex justify-between items-start mb-6 relative z-10">
+<div>
+<p className="font-label-md text-label-md text-on-surface-variant mb-1">Next Departure</p>
+<h2 className="font-headline-md text-headline-md text-on-surface font-mono-data tracking-wider">SL-492</h2>
+</div>
+<div className="text-right">
+<p className="font-label-md text-label-md text-on-surface-variant mb-1">T-Minus</p>
+<p className="font-mono-data text-mono-data text-primary font-bold text-lg">48h 12m</p>
+</div>
+</div>
+<div className="relative z-10 flex items-center justify-between border-t border-outline-variant/30 pt-4 mt-2">
+<div className="text-center">
+<h3 className="font-headline-md text-headline-md">JFK</h3>
+<p className="font-mono-data text-mono-data text-on-surface-variant text-xs">08:00 AM</p>
+</div>
+<div className="flex-1 px-4 flex flex-col items-center">
+<span className="material-symbols-outlined text-outline-variant text-sm mb-1">flight_takeoff</span>
+<div className="w-full border-t-2 border-dashed border-outline-variant/50 relative">
+<div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-2 h-2 bg-primary rounded-full neon-glow-red"></div>
+</div>
+</div>
+<div className="text-center">
+<h3 className="font-headline-md text-headline-md">LHR</h3>
+<p className="font-mono-data text-mono-data text-on-surface-variant text-xs">20:15 PM</p>
+</div>
+</div>
+</div>
+</div>
 
-            <div className="text-center">
-              <Link href="/search" className="inline-block px-5 py-2.5 bg-brand-red text-brand-white font-bold rounded uppercase tracking-wider text-xs hover:bg-brand-red-light transition-all shadow-md shadow-brand-red/25 transform hover:-translate-y-0.5">
-                + Book New Flight
-              </Link>
-            </div>
-          </div>
-        </div>
-      </div>
+<div className="glass-card rounded-xl overflow-hidden">
+<div className="px-6 py-5 border-b border-outline-variant/30 flex justify-between items-center bg-surface-bright/5">
+<h2 className="font-headline-md text-headline-md text-on-surface">Recent Bookings</h2>
+<button className="font-label-md text-label-md text-primary hover:text-primary-container transition-colors flex items-center gap-1">
+                    View All <span className="material-symbols-outlined text-sm">arrow_forward</span>
+</button>
+</div>
+<div className="overflow-x-auto">
+<table className="w-full text-left border-collapse">
+<thead>
+<tr>
+<th className="font-label-md text-label-md text-on-surface-variant py-4 px-6 font-medium">Flight Record</th>
+<th className="font-label-md text-label-md text-on-surface-variant py-4 px-6 font-medium">Route</th>
+<th className="font-label-md text-label-md text-on-surface-variant py-4 px-6 font-medium">Date</th>
+<th className="font-label-md text-label-md text-on-surface-variant py-4 px-6 font-medium">Cabin</th>
+<th className="font-label-md text-label-md text-on-surface-variant py-4 px-6 font-medium text-right">Status</th>
+</tr>
+</thead>
+<tbody className="divide-y divide-outline-variant/10">
 
-      {/* Boarding Pass Modal popup */}
-      {modalOpen && (
-        <div
-          className="fixed inset-0 z-50 bg-black/80 flex items-center justify-center p-6 backdrop-blur-md animate-fade-in"
-          onClick={() => setModalOpen(false)}
-        >
-          <div
-            className="w-full max-w-xl bg-brand-charcoal border border-brand-gray-dark/50 rounded-2xl p-6 max-h-[85vh] overflow-y-auto space-y-4 shadow-2xl relative animate-bounce-in"
-            onClick={e => e.stopPropagation()}
-          >
-            <div className="flex justify-between items-center border-b border-brand-gray-dark/30 pb-3">
-              <h3 className="text-lg font-bold font-heading">🎫 Boarding Passes</h3>
-              <button className="text-brand-gray-light hover:text-brand-white text-lg font-bold" onClick={() => setModalOpen(false)}>✕</button>
-            </div>
+<tr className="hover:bg-surface-bright/10 transition-colors group">
+<td className="py-4 px-6">
+<div className="flex items-center gap-3">
+<div className="w-8 h-8 rounded bg-surface-bright flex items-center justify-center border border-outline-variant/30 group-hover:border-primary/50 transition-colors">
+<span className="material-symbols-outlined text-primary text-sm">flight</span>
+</div>
+<div>
+<p className="font-mono-data text-mono-data text-on-surface font-semibold">SL-492</p>
+<p className="font-label-md text-label-md text-on-surface-variant text-xs">PNR: X7B9Q2</p>
+</div>
+</div>
+</td>
+<td className="py-4 px-6 font-mono-data text-mono-data text-on-surface">JFK <span className="text-outline-variant mx-1">→</span> LHR</td>
+<td className="py-4 px-6 font-mono-data text-mono-data text-on-surface">Oct 24, 2023</td>
+<td className="py-4 px-6">
+<span className="bg-surface-bright/40 text-on-surface font-mono-data text-mono-data text-xs px-2 py-1 rounded border-l-2 border-primary">Business</span>
+</td>
+<td className="py-4 px-6 text-right">
+<div className="inline-flex items-center gap-2">
+<span className="font-label-md text-label-md text-on-surface">Upcoming</span>
+<span className="w-2 h-2 rounded-full bg-primary neon-glow-red"></span>
+</div>
+</td>
+</tr>
 
-            <div className="space-y-4">
-              {modalLoading ? (
-                <div className="flex justify-center py-12"><div className="spinner" /></div>
-              ) : modalPasses.length === 0 ? (
-                <p className="text-xs text-brand-gray-light text-center py-6">No boarding passes generated</p>
-              ) : (
-                modalPasses.map((bp, idx) => {
-                  const bs = bp.booking_seats || {};
-                  const fs = bs.flight_seats || {};
-                  const fl = bs.flights || {};
-                  const al = fl.airlines || {};
-                  const oa = fl.origin_ap || {};
-                  const da = fl.dest_ap || {};
+<tr className="hover:bg-surface-bright/10 transition-colors group">
+<td className="py-4 px-6">
+<div className="flex items-center gap-3">
+<div className="w-8 h-8 rounded bg-surface-bright flex items-center justify-center border border-outline-variant/30">
+<span className="material-symbols-outlined text-on-surface-variant text-sm">flight</span>
+</div>
+<div>
+<p className="font-mono-data text-mono-data text-on-surface font-semibold">SL-118</p>
+<p className="font-label-md text-label-md text-on-surface-variant text-xs">PNR: M4T1P9</p>
+</div>
+</div>
+</td>
+<td className="py-4 px-6 font-mono-data text-mono-data text-on-surface">LAX <span className="text-outline-variant mx-1">→</span> JFK</td>
+<td className="py-4 px-6 font-mono-data text-mono-data text-on-surface">Sep 12, 2023</td>
+<td className="py-4 px-6">
+<span className="bg-surface-bright/40 text-on-surface font-mono-data text-mono-data text-xs px-2 py-1 rounded border-l-2 border-primary">First</span>
+</td>
+<td className="py-4 px-6 text-right">
+<div className="inline-flex items-center gap-2">
+<span className="font-label-md text-label-md text-on-surface-variant">Completed</span>
+<span className="w-2 h-2 rounded-full bg-green-500 neon-glow-green opacity-50"></span>
+</div>
+</td>
+</tr>
 
-                  return (
-                    <div key={idx} className="bg-brand-black border border-brand-gray-dark/40 rounded-xl overflow-hidden shadow">
-                      
-                      {/* Pass header */}
-                      <div className="px-4 py-3 bg-brand-charcoal border-b border-brand-gray-dark/40 flex justify-between items-center text-xs">
-                        <div>
-                          <div className="text-[8px] text-brand-gray-light font-bold uppercase tracking-wider">Airline</div>
-                          <div className="font-extrabold">{al.airline_name}</div>
-                          <div className="text-[10px] text-brand-red-light font-bold">{fl.flight_number}</div>
-                        </div>
-                        <div className="text-center">
-                          <span className="px-2 py-0.5 rounded bg-green-500/10 border border-green-500/20 text-green-400 text-[9px] font-bold uppercase">
-                            Confirmed
-                          </span>
-                        </div>
-                        <div className="text-right">
-                          <div className="text-[8px] text-brand-gray-light font-bold uppercase tracking-wider">Passenger</div>
-                          <div className="font-bold">{bs.pax_first_name} {bs.pax_last_name}</div>
-                          <div className="text-[10px] text-brand-gray-light">{bs.pax_passport || '—'}</div>
-                        </div>
-                      </div>
-
-                      {/* Pass route */}
-                      <div className="p-5 grid grid-cols-3 items-center text-center">
-                        <div className="text-left">
-                          <div className="text-2xl font-black font-heading text-brand-white">{oa.iata_code}</div>
-                          <div className="text-[10px] text-brand-gray-light truncate">{oa.cities?.city_name}</div>
-                          <div className="mt-2 text-xs font-bold text-brand-white/80">{formatTime(fl.departure_time)}</div>
-                        </div>
-                        <div className="flex flex-col items-center">
-                          <div className="text-xl text-brand-red">✈</div>
-                          <div className="text-[10px] text-brand-gray-light uppercase font-bold mt-1">{fs.class || 'Economy'}</div>
-                        </div>
-                        <div className="text-right">
-                          <div className="text-2xl font-black font-heading text-brand-white">{da.iata_code}</div>
-                          <div className="text-[10px] text-brand-gray-light truncate">{da.cities?.city_name}</div>
-                          <div className="mt-2 text-xs font-bold text-brand-white/80">{formatTime(fl.arrival_time)}</div>
-                        </div>
-                      </div>
-
-                      {/* Pass footer details */}
-                      <div className="px-4 py-3 bg-brand-charcoal border-t border-brand-gray-dark/40 flex justify-between items-center">
-                        <div>
-                          <div className="text-[8px] text-brand-gray-light font-bold uppercase tracking-wider">Seat</div>
-                          <div className="text-base font-extrabold text-brand-red-light font-heading">{fs.seat_number || '—'}</div>
-                        </div>
-                        <div>
-                          <div className="text-[8px] text-brand-gray-light font-bold uppercase tracking-wider">Gate</div>
-                          <div className="text-base font-extrabold text-brand-white font-heading">{bp.gate || 'TBD'}</div>
-                        </div>
-                        <div className="text-[10px] bg-brand-white text-brand-black px-3 py-1 font-mono tracking-[3px] rounded border border-brand-gray-dark text-center uppercase font-bold">
-                          {bp.barcode || 'SKYBOOK'}
-                        </div>
-                      </div>
-
-                    </div>
-                  );
-                })
-              )}
-            </div>
-          </div>
-        </div>
-      )}
-    </div>
+<tr className="hover:bg-surface-bright/10 transition-colors group opacity-75">
+<td className="py-4 px-6">
+<div className="flex items-center gap-3">
+<div className="w-8 h-8 rounded bg-surface-bright flex items-center justify-center border border-outline-variant/30">
+<span className="material-symbols-outlined text-on-surface-variant text-sm">block</span>
+</div>
+<div>
+<p className="font-mono-data text-mono-data text-on-surface font-semibold line-through decoration-outline-variant">SL-892</p>
+<p className="font-label-md text-label-md text-on-surface-variant text-xs">PNR: R2D2C3</p>
+</div>
+</div>
+</td>
+<td className="py-4 px-6 font-mono-data text-mono-data text-on-surface">ORD <span className="text-outline-variant mx-1">→</span> MIA</td>
+<td className="py-4 px-6 font-mono-data text-mono-data text-on-surface">Aug 05, 2023</td>
+<td className="py-4 px-6">
+<span className="bg-surface-bright/40 text-on-surface font-mono-data text-mono-data text-xs px-2 py-1 rounded border-l-2 border-surface-variant">Economy</span>
+</td>
+<td className="py-4 px-6 text-right">
+<div className="inline-flex items-center gap-2">
+<span className="font-label-md text-label-md text-outline-variant">Cancelled</span>
+<span className="w-2 h-2 rounded-full bg-outline-variant"></span>
+</div>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+</main>
+    </>
   );
 }

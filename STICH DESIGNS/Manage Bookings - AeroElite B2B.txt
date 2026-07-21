@@ -1,0 +1,407 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>AeroElite B2B - Manage Bookings</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=Outfit:wght@400;500;600;700;800&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "tertiary": "#c6c6c7",
+                        "secondary-fixed": "#e5e2e1",
+                        "on-tertiary-fixed": "#1a1c1c",
+                        "surface-container-high": "#2a2a2a",
+                        "surface-tint": "#ffb4ab",
+                        "on-surface-variant": "#e6bdb8",
+                        "on-error-container": "#ffdad6",
+                        "inverse-primary": "#bf0715",
+                        "error": "#ffb4ab",
+                        "surface-variant": "#353534",
+                        "outline-variant": "#5c403c",
+                        "inverse-on-surface": "#313030",
+                        "secondary": "#c8c6c5",
+                        "on-secondary": "#313030",
+                        "secondary-fixed-dim": "#c8c6c5",
+                        "tertiary-container": "#717272",
+                        "on-secondary-fixed-variant": "#474746",
+                        "on-tertiary-container": "#f8f8f8",
+                        "primary-fixed-dim": "#ffb4ab",
+                        "on-primary-container": "#fff6f5",
+                        "outline": "#ac8884",
+                        "on-secondary-container": "#b7b5b4",
+                        "surface-bright": "#3a3939",
+                        "on-secondary-fixed": "#1c1b1b",
+                        "background": "#131313",
+                        "on-tertiary-fixed-variant": "#454747",
+                        "on-primary-fixed-variant": "#93000b",
+                        "surface": "#131313",
+                        "on-surface": "#e5e2e1",
+                        "on-primary": "#690005",
+                        "on-tertiary": "#2f3131",
+                        "surface-container-low": "#1c1b1b",
+                        "surface-container-lowest": "#0e0e0e",
+                        "tertiary-fixed-dim": "#c6c6c7",
+                        "secondary-container": "#474746",
+                        "surface-dim": "#131313",
+                        "surface-container-highest": "#353534",
+                        "primary-fixed": "#ffdad6",
+                        "on-background": "#e5e2e1",
+                        "tertiary-fixed": "#e2e2e2",
+                        "primary-container": "#dc2626",
+                        "error-container": "#93000a",
+                        "surface-container": "#201f1f",
+                        "on-error": "#690005",
+                        "inverse-surface": "#e5e2e1",
+                        "primary": "#ffb4ab",
+                        "on-primary-fixed": "#410002"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.125rem",
+                        "lg": "0.25rem",
+                        "xl": "0.5rem",
+                        "full": "0.75rem"
+                    },
+                    "spacing": {
+                        "section-gap": "48px",
+                        "container-padding": "24px",
+                        "gutter": "16px",
+                        "base": "8px",
+                        "max-width": "1440px"
+                    },
+                    "fontFamily": {
+                        "mono-data": ["Inter"],
+                        "body-lg": ["Inter"],
+                        "display-lg": ["Outfit"],
+                        "label-md": ["Inter"],
+                        "headline-md": ["Outfit"],
+                        "headline-lg-mobile": ["Outfit"],
+                        "body-md": ["Inter"],
+                        "headline-lg": ["Outfit"]
+                    },
+                    "fontSize": {
+                        "mono-data": ["14px", { "lineHeight": "20px", "fontWeight": "500" }],
+                        "body-lg": ["18px", { "lineHeight": "28px", "fontWeight": "400" }],
+                        "display-lg": ["48px", { "lineHeight": "56px", "letterSpacing": "-0.02em", "fontWeight": "700" }],
+                        "label-md": ["14px", { "lineHeight": "20px", "letterSpacing": "0.05em", "fontWeight": "600" }],
+                        "headline-md": ["24px", { "lineHeight": "32px", "fontWeight": "600" }],
+                        "headline-lg-mobile": ["24px", { "lineHeight": "32px", "fontWeight": "600" }],
+                        "body-md": ["16px", { "lineHeight": "24px", "fontWeight": "400" }],
+                        "headline-lg": ["32px", { "lineHeight": "40px", "letterSpacing": "-0.01em", "fontWeight": "600" }]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        body {
+            background-color: #0A0A0A;
+            color: #e5e2e1;
+        }
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+        }
+        .glow-crimson:hover {
+            box-shadow: 0 0 24px rgba(220, 38, 38, 0.3);
+            background: rgba(255, 255, 255, 0.05);
+        }
+        .table-row-hover:hover {
+            background: rgba(255, 255, 255, 0.05);
+        }
+        .badge-glow-green {
+            box-shadow: 0 0 8px rgba(34, 197, 94, 0.4);
+        }
+        .badge-glow-amber {
+            box-shadow: 0 0 8px rgba(245, 158, 11, 0.4);
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col md:flex-row antialiased">
+<!-- SideNavBar (Desktop) -->
+<aside class="hidden md:flex flex-col bg-surface-container-lowest/80 dark:bg-surface-container-lowest/80 backdrop-blur-xl fixed left-0 top-0 h-full w-[280px] border-r border-white/5 shadow-2xl shadow-black/40 z-40 py-base">
+<div class="px-6 py-4 flex items-center gap-4 mb-6">
+<img alt="Agency Logo" class="w-12 h-12 rounded-full object-cover border border-white/20" src="https://lh3.googleusercontent.com/aida/AP1WRLuXSZn3kxRiakHnOvBXGZ90nT3mdCAAtYmNig4jJ8UvQtycOkEFUe7cft1xIM86A_2saveTDYWc3asysIFOCvOifQCxaNNLYSWrGDLjdOrfEsyZEravdNBJpli-9qPWIMXXJQLHF4kMzp3gE9URtxTOd8ibXjxBX16EogHILlAaSxJCs3Cx3lSC68pueV2BdU3Ej3jBbU0ulh_K52-tx9M_uLn_08BvS8vw65ZNG7gTGbp5bIHTHkc3nf8"/>
+<div>
+<h2 class="font-headline-md text-headline-md text-on-surface">Elite Travel Concierge</h2>
+<p class="font-body-md text-body-md text-on-surface-variant text-sm mt-1">ID: AGENT-9942</p>
+</div>
+</div>
+<div class="px-6 mb-8">
+<button class="w-full bg-primary-container text-white py-3 rounded hover:bg-red-700 transition-colors font-label-md text-label-md shadow-[0_0_15px_rgba(220,38,38,0.4)]">
+                New Booking
+            </button>
+</div>
+<nav class="flex-1 flex flex-col gap-2">
+<a class="flex items-center gap-4 text-on-surface-variant px-6 py-4 hover:bg-white/5 hover:text-on-surface transition-colors active:translate-x-1 duration-200" href="#">
+<span class="material-symbols-outlined">flight_takeoff</span>
+<span class="font-label-md text-label-md">Flight Search</span>
+</a>
+<a class="flex items-center gap-4 text-on-surface-variant px-6 py-4 hover:bg-white/5 hover:text-on-surface transition-colors active:translate-x-1 duration-200" href="#">
+<span class="material-symbols-outlined">event_note</span>
+<span class="font-label-md text-label-md">Itineraries</span>
+</a>
+<a class="flex items-center gap-4 text-on-surface-variant px-6 py-4 hover:bg-white/5 hover:text-on-surface transition-colors active:translate-x-1 duration-200" href="#">
+<span class="material-symbols-outlined">group</span>
+<span class="font-label-md text-label-md">Passenger Manifests</span>
+</a>
+<a class="flex items-center gap-4 text-on-surface-variant px-6 py-4 hover:bg-white/5 hover:text-on-surface transition-colors active:translate-x-1 duration-200" href="#">
+<span class="material-symbols-outlined">payments</span>
+<span class="font-label-md text-label-md">Agent Wallet</span>
+</a>
+<a class="flex items-center gap-4 text-on-surface-variant px-6 py-4 hover:bg-white/5 hover:text-on-surface transition-colors active:translate-x-1 duration-200" href="#">
+<span class="material-symbols-outlined">support_agent</span>
+<span class="font-label-md text-label-md">Support</span>
+</a>
+<a class="flex items-center gap-4 text-on-surface-variant px-6 py-4 hover:bg-white/5 hover:text-on-surface transition-colors active:translate-x-1 duration-200" href="#">
+<span class="material-symbols-outlined">settings</span>
+<span class="font-label-md text-label-md">Settings</span>
+</a>
+</nav>
+<div class="mt-auto">
+<a class="flex items-center gap-4 text-on-surface-variant px-6 py-4 hover:bg-white/5 hover:text-on-surface transition-colors active:translate-x-1 duration-200" href="#">
+<span class="material-symbols-outlined">logout</span>
+<span class="font-label-md text-label-md">Logout</span>
+</a>
+</div>
+</aside>
+<!-- Main Content Area -->
+<main class="flex-1 md:ml-[280px] flex flex-col min-h-screen">
+<!-- TopNavBar (Web) -->
+<header class="hidden md:flex justify-between items-center px-container-padding w-full h-20 sticky top-0 z-50 bg-surface/30 dark:bg-surface/30 backdrop-blur-md border-b border-white/10 shadow-2xl shadow-black/50">
+<div class="flex items-center gap-8">
+<h1 class="font-display-lg text-display-lg font-bold text-primary dark:text-primary text-[28px]">AeroElite B2B</h1>
+<nav class="flex items-center gap-6">
+<a class="text-on-surface/70 font-medium hover:text-on-surface hover:bg-white/5 transition-all duration-300 active:scale-95 px-2 py-1 rounded" href="#">
+<span class="font-label-md text-label-md">Dashboard</span>
+</a>
+<a class="text-primary font-bold border-b-2 border-primary pb-1 active:scale-95 transition-transform" href="#">
+<span class="font-label-md text-label-md">Bookings</span>
+</a>
+<a class="text-on-surface/70 font-medium hover:text-on-surface hover:bg-white/5 transition-all duration-300 active:scale-95 px-2 py-1 rounded" href="#">
+<span class="font-label-md text-label-md">Inventory</span>
+</a>
+<a class="text-on-surface/70 font-medium hover:text-on-surface hover:bg-white/5 transition-all duration-300 active:scale-95 px-2 py-1 rounded" href="#">
+<span class="font-label-md text-label-md">Reports</span>
+</a>
+</nav>
+</div>
+<div class="flex items-center gap-4">
+<div class="relative">
+<input class="bg-[#050505] border border-white/10 rounded-full py-2 pl-10 pr-4 text-sm text-on-surface focus:outline-none focus:border-primary-container focus:ring-1 focus:ring-primary-container transition-all w-64 glass-panel" placeholder="Search PNR..." type="text"/>
+<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant text-[20px]">search</span>
+</div>
+<button class="text-primary-container hover:text-white transition-colors border border-primary-container hover:bg-primary-container/20 px-4 py-2 rounded font-label-md text-label-md">
+                    Top Up Wallet
+                </button>
+<div class="flex items-center gap-2 text-on-surface">
+<button class="p-2 rounded-full hover:bg-white/10 transition-colors"><span class="material-symbols-outlined">account_balance_wallet</span></button>
+<button class="p-2 rounded-full hover:bg-white/10 transition-colors"><span class="material-symbols-outlined">notifications</span></button>
+<button class="p-2 rounded-full hover:bg-white/10 transition-colors"><span class="material-symbols-outlined">language</span></button>
+</div>
+<img alt="Agent Profile Avatar" class="w-10 h-10 rounded-full object-cover border border-white/20 ml-2" data-alt="A professional headshot of a travel agent in a modern office setting. The lighting is cinematic and moody, with a sleek high-tech corporate background. Professional attire, looking confident. Dark cinematic tones." src="https://lh3.googleusercontent.com/aida-public/AB6AXuA-CtOafn0LRalzZp-fT11Ru3YQveq9ohelUtN3LpVHSPKVaPIVC01k_NOXRKViJz_PwIpediqd3M1tcTQMTbeQ9_d_HNarhvjW9MYP586PA05J2inaz0-ANQ5l9Dxhd5_fpUd_W7pa33UDbHDqcwNhOnnkZkh6awpiaMYhg_8SCqdGX2kHSWUySwa62WCR7YrVrmTMk1Mjz_HW3Sv5nR8FkL5F0ZoQh1qC2-FJXfyYmWLo-tWdClw9"/>
+</div>
+</header>
+<!-- Content Canvas -->
+<div class="p-container-padding max-w-max-width mx-auto w-full space-y-8 mt-4">
+<!-- Header Section -->
+<div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+<div>
+<h1 class="font-headline-lg text-headline-lg text-on-surface">Manage Bookings</h1>
+<p class="font-body-md text-body-md text-on-surface-variant mt-1">View and manage your agency's flight reservations.</p>
+</div>
+<div class="flex items-center gap-4 w-full md:w-auto">
+<div class="relative w-full md:w-auto">
+<input class="bg-[#050505] border border-white/10 rounded py-2 pl-10 pr-4 text-sm text-on-surface focus:outline-none focus:border-primary-container focus:ring-1 focus:ring-primary-container transition-all w-full md:w-64" placeholder="Booking Ref (PNR)" type="text"/>
+<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant text-[20px]">search</span>
+</div>
+<button class="bg-primary-container text-white px-6 py-2 rounded hover:bg-red-700 transition-colors font-label-md text-label-md shadow-[0_0_15px_rgba(220,38,38,0.3)] whitespace-nowrap">
+                        Create New Booking
+                    </button>
+</div>
+</div>
+<!-- Summary Cards -->
+<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+<div class="glass-panel rounded-lg p-6 glow-crimson transition-all cursor-default">
+<div class="flex justify-between items-start">
+<div>
+<p class="font-label-md text-label-md text-on-surface-variant mb-1">Total Bookings</p>
+<h3 class="font-headline-md text-headline-md text-on-surface">1,248</h3>
+</div>
+<span class="material-symbols-outlined text-tertiary">flight_class</span>
+</div>
+</div>
+<div class="glass-panel rounded-lg p-6 glow-crimson transition-all cursor-default relative overflow-hidden">
+<div class="absolute left-0 top-0 bottom-0 w-1 bg-amber-500"></div>
+<div class="flex justify-between items-start">
+<div>
+<p class="font-label-md text-label-md text-on-surface-variant mb-1">Pending Tickets</p>
+<h3 class="font-headline-md text-headline-md text-on-surface">42</h3>
+</div>
+<span class="material-symbols-outlined text-amber-500">pending_actions</span>
+</div>
+</div>
+<div class="glass-panel rounded-lg p-6 glow-crimson transition-all cursor-default relative overflow-hidden">
+<div class="absolute left-0 top-0 bottom-0 w-1 bg-primary-container"></div>
+<div class="flex justify-between items-start">
+<div>
+<p class="font-label-md text-label-md text-on-surface-variant mb-1">Upcoming Departures</p>
+<h3 class="font-headline-md text-headline-md text-on-surface">18</h3>
+</div>
+<span class="material-symbols-outlined text-primary-container">flight_takeoff</span>
+</div>
+</div>
+<div class="glass-panel rounded-lg p-6 glow-crimson transition-all cursor-default relative overflow-hidden">
+<div class="absolute left-0 top-0 bottom-0 w-1 bg-green-500"></div>
+<div class="flex justify-between items-start">
+<div>
+<p class="font-label-md text-label-md text-on-surface-variant mb-1">Completed</p>
+<h3 class="font-headline-md text-headline-md text-on-surface">892</h3>
+</div>
+<span class="material-symbols-outlined text-green-500">task_alt</span>
+</div>
+</div>
+</div>
+<!-- Workspace Table -->
+<div class="glass-panel rounded-lg overflow-hidden flex flex-col">
+<!-- Filters -->
+<div class="p-4 border-b border-white/10 flex flex-wrap gap-4 items-center justify-between bg-black/20">
+<div class="flex gap-4">
+<select class="bg-[#050505] border border-white/10 rounded py-1.5 px-3 text-sm text-on-surface focus:border-primary-container outline-none glass-panel">
+<option>All Statuses</option>
+<option>Ticketed</option>
+<option>Pending</option>
+<option>Cancelled</option>
+</select>
+<select class="bg-[#050505] border border-white/10 rounded py-1.5 px-3 text-sm text-on-surface focus:border-primary-container outline-none glass-panel">
+<option>Last 30 Days</option>
+<option>This Week</option>
+<option>Today</option>
+</select>
+</div>
+<button class="text-on-surface-variant hover:text-on-surface flex items-center gap-1 text-sm font-medium transition-colors">
+<span class="material-symbols-outlined text-[18px]">filter_list</span> More Filters
+                    </button>
+</div>
+<!-- Table -->
+<div class="overflow-x-auto">
+<table class="w-full text-left border-collapse">
+<thead>
+<tr class="bg-white/5 border-b border-white/10">
+<th class="p-4 font-label-md text-label-md text-on-surface-variant font-medium">PNR</th>
+<th class="p-4 font-label-md text-label-md text-on-surface-variant font-medium">Passenger</th>
+<th class="p-4 font-label-md text-label-md text-on-surface-variant font-medium">Route</th>
+<th class="p-4 font-label-md text-label-md text-on-surface-variant font-medium">Departure</th>
+<th class="p-4 font-label-md text-label-md text-on-surface-variant font-medium">Carrier</th>
+<th class="p-4 font-label-md text-label-md text-on-surface-variant font-medium">Status</th>
+<th class="p-4 font-label-md text-label-md text-on-surface-variant font-medium">Fare (PKR)</th>
+<th class="p-4 font-label-md text-label-md text-on-surface-variant font-medium text-right">Actions</th>
+</tr>
+</thead>
+<tbody class="font-mono-data text-mono-data">
+<!-- Row 1 -->
+<tr class="border-b border-white/5 table-row-hover transition-colors">
+<td class="p-4 font-bold text-on-surface">X7Y8Z9</td>
+<td class="p-4 text-on-surface">Ahmed, S.</td>
+<td class="p-4 text-on-surface-variant flex items-center gap-2">
+                                    DXB <span class="material-symbols-outlined text-[16px] text-primary-container">arrow_forward</span> LHR
+                                </td>
+<td class="p-4 text-on-surface-variant">24 Oct, 10:30</td>
+<td class="p-4 flex items-center gap-2">
+<img alt="EK" class="w-6 h-6 rounded bg-white/10 p-0.5 object-contain" data-alt="Emirates Airlines logo stylized in a minimal flat icon design. Red and white on dark background. Clean corporate style." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBY6GPf2O9t-suTyBP7w8Thn7VEPBFBvdsFRcMX9jB6UyZi314uuC8i2XJkn6whHSjntqAE-NXylnf8qMD1n3H9thi7JeHT5P7L-c9a4BwNwdcEbhGkrK_aZYCgA8FFjGmT1ABxX5RJBW8NUTdXFM4ybSAmDAxYiWvkR9qFSoPjGTA4C_MTmw4RzgZD7zk9snrbM9Wyzm7c90jn5xtB3Ajx8zTGeKUo_Z5fZ2shvssnquvRtWYrI481"/>
+<span class="text-on-surface">EK</span>
+</td>
+<td class="p-4">
+<span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-500/10 text-green-400 border border-green-500/20 badge-glow-green">
+<span class="w-1.5 h-1.5 rounded-full bg-green-400"></span>
+                                        Ticketed
+                                    </span>
+</td>
+<td class="p-4 text-on-surface">145,000</td>
+<td class="p-4 text-right">
+<div class="flex items-center justify-end gap-2">
+<button class="p-1.5 text-on-surface-variant hover:text-white hover:bg-white/10 rounded transition-colors" title="View Details"><span class="material-symbols-outlined text-[20px]">visibility</span></button>
+<button class="p-1.5 text-on-surface-variant hover:text-white hover:bg-white/10 rounded transition-colors" title="Download E-Ticket"><span class="material-symbols-outlined text-[20px]">download</span></button>
+<button class="p-1.5 text-on-surface-variant hover:text-primary-container hover:bg-red-500/10 rounded transition-colors" title="Cancel"><span class="material-symbols-outlined text-[20px]">cancel</span></button>
+</div>
+</td>
+</tr>
+<!-- Row 2 -->
+<tr class="border-b border-white/5 table-row-hover transition-colors">
+<td class="p-4 font-bold text-on-surface">A2B3C4</td>
+<td class="p-4 text-on-surface">Khan, M.</td>
+<td class="p-4 text-on-surface-variant flex items-center gap-2">
+                                    KHI <span class="material-symbols-outlined text-[16px] text-primary-container">arrow_forward</span> DXB
+                                </td>
+<td class="p-4 text-on-surface-variant">25 Oct, 08:15</td>
+<td class="p-4 flex items-center gap-2">
+<img alt="QR" class="w-6 h-6 rounded bg-white/10 p-0.5 object-contain" data-alt="Qatar Airways logo stylized in a minimal flat icon design. Maroon and white on dark background. Clean corporate style." src="https://lh3.googleusercontent.com/aida-public/AB6AXuA1MPahfLvgj4UyGA7hltgUmGl2hD0-irNogtI1J-3TdTCDFohN5mYIELrUwh98NkMubEl_mCqzrWVLn6aRe7EQrYvut2neBo5lpcM45x5VhIn6wi5fZOj-Kfa4ZTgiEV6t6f2rKt3wqq_xOHPX5A-ew2ZTyFv-1r779GzZsG5zSgr0ZrsBRVEJTKgHFqP-S0WYunEumaXrvE_WLV3eECHsAiseuKbMvIwdGPrgQ8O2pyz6Cgk2K8Vd"/>
+<span class="text-on-surface">QR</span>
+</td>
+<td class="p-4">
+<span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-medium bg-amber-500/10 text-amber-400 border border-amber-500/20 badge-glow-amber">
+<span class="w-1.5 h-1.5 rounded-full bg-amber-400"></span>
+                                        Pending
+                                    </span>
+</td>
+<td class="p-4 text-on-surface">85,500</td>
+<td class="p-4 text-right">
+<div class="flex items-center justify-end gap-2">
+<button class="p-1.5 text-on-surface-variant hover:text-white hover:bg-white/10 rounded transition-colors" title="View Details"><span class="material-symbols-outlined text-[20px]">visibility</span></button>
+<button class="p-1.5 text-on-surface-variant hover:text-white hover:bg-white/10 rounded transition-colors opacity-50 cursor-not-allowed" title="Download E-Ticket"><span class="material-symbols-outlined text-[20px]">download</span></button>
+<button class="p-1.5 text-on-surface-variant hover:text-primary-container hover:bg-red-500/10 rounded transition-colors" title="Cancel"><span class="material-symbols-outlined text-[20px]">cancel</span></button>
+</div>
+</td>
+</tr>
+<!-- Row 3 -->
+<tr class="border-b border-white/5 table-row-hover transition-colors opacity-70">
+<td class="p-4 font-bold text-on-surface line-through">J9K8L7</td>
+<td class="p-4 text-on-surface">Ali, R.</td>
+<td class="p-4 text-on-surface-variant flex items-center gap-2">
+                                    ISB <span class="material-symbols-outlined text-[16px] text-primary-container">arrow_forward</span> JFK
+                                </td>
+<td class="p-4 text-on-surface-variant">20 Oct, 23:45</td>
+<td class="p-4 flex items-center gap-2">
+<img alt="TK" class="w-6 h-6 rounded bg-white/10 p-0.5 object-contain" data-alt="Turkish Airlines logo stylized in a minimal flat icon design. Red and white on dark background. Clean corporate style." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDClEwSciDd4QeDIkQ8Zam09FidaqtvCZGRVyyJlwexhTzMq530AbSHUlJ_du4ofkKDEaz8mIYDVku7TEW9z0qNjerQTpDKh_O7efsngDnYlCzgwpjNj-8r9A8s6cyZAtUORDkIqyGfZpcnTqEEKSFa19RAr2cYthefm89AxfPMlrte-15GqgdJPRVopnU7M2jR6y8IXpt6tZnXcq1K8Qz2OitX_T4RXWBHKrnCBDpJ4MkZyYJKp5IQ"/>
+<span class="text-on-surface">TK</span>
+</td>
+<td class="p-4">
+<span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-500/10 text-gray-400 border border-gray-500/20">
+<span class="w-1.5 h-1.5 rounded-full bg-gray-400"></span>
+                                        Cancelled
+                                    </span>
+</td>
+<td class="p-4 text-on-surface">320,000</td>
+<td class="p-4 text-right">
+<div class="flex items-center justify-end gap-2">
+<button class="p-1.5 text-on-surface-variant hover:text-white hover:bg-white/10 rounded transition-colors" title="View Details"><span class="material-symbols-outlined text-[20px]">visibility</span></button>
+</div>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+<!-- Pagination -->
+<div class="p-4 border-t border-white/10 flex items-center justify-between bg-black/20">
+<span class="text-sm text-on-surface-variant">Showing 1 to 3 of 1,248 entries</span>
+<div class="flex gap-1">
+<button class="p-1 text-on-surface-variant hover:text-white bg-white/5 hover:bg-white/10 rounded border border-white/10 transition-colors disabled:opacity-50"><span class="material-symbols-outlined text-[20px]">chevron_left</span></button>
+<button class="px-3 py-1 bg-primary-container text-white rounded text-sm font-medium">1</button>
+<button class="px-3 py-1 text-on-surface-variant hover:text-white bg-white/5 hover:bg-white/10 rounded border border-white/10 text-sm transition-colors">2</button>
+<button class="px-3 py-1 text-on-surface-variant hover:text-white bg-white/5 hover:bg-white/10 rounded border border-white/10 text-sm transition-colors">3</button>
+<span class="px-2 text-on-surface-variant">...</span>
+<button class="p-1 text-on-surface-variant hover:text-white bg-white/5 hover:bg-white/10 rounded border border-white/10 transition-colors"><span class="material-symbols-outlined text-[20px]">chevron_right</span></button>
+</div>
+</div>
+</div>
+</div>
+</main>
+</body></html>

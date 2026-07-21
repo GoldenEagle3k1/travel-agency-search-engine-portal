@@ -9,6 +9,7 @@ SUPABASE_KEY: str = os.getenv("SUPABASE_KEY", "")
 SUPABASE_SERVICE_KEY: str = os.getenv("SUPABASE_SERVICE_KEY", "")
 SECRET_KEY: str = os.getenv("SECRET_KEY", "dev-secret-key-change-in-production")
 DEBUG: bool = os.getenv("DEBUG", "True").lower() == "true"
+DUFFEL_API_KEY: str = os.getenv("duffel_api", "")
 
 # Anon client — used for public operations
 supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)

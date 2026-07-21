@@ -1,8 +1,23 @@
 'use client';
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { Api, Auth, formatPrice, formatDate, formatTime, formatDateTime, getStatusBadge } from '@/utils/api';
+import { Api, Auth, AgentApi, formatPrice, formatDate, formatTime, formatDateTime, getStatusBadge, formatPKR } from '@/utils/api';
 import { useAuth } from '@/context/AuthContext';
+
+
+const LogoIcon = ({ className = "w-8 h-8" }) => (
+  <svg 
+    className={`text-red-600 transform -rotate-45 transition-transform duration-500 ${className}`} 
+    viewBox="0 0 24 24" 
+    fill="none" 
+    xmlns="http://www.w3.org/2000/svg"
+  >
+    <path 
+      d="M21 16V14L13 9V3.5C13 2.67 12.33 2 11.5 2C10.67 2 10 2.67 10 3.5V9L2 14V16L10 13.5V19L8 20.5V22L11.5 21L15 22V20.5L13 19V13.5L21 16Z" 
+      fill="currentColor"
+    />
+  </svg>
+);
 
 export default function AdminPage() {
   const router = useRouter();
@@ -40,6 +55,13 @@ export default function AdminPage() {
   // Airline revenue analytics
   const [airlineRevenue, setAirlineRevenue] = useState([]);
   const [airlineLoading, setAirlineLoading] = useState(false);
+
+  // Travel agent states
+  const [agentRequests, setAgentRequests] = useState([]);
+  const [requestsLoading, setRequestsLoading] = useState(false);
+  const [agents, setAgents] = useState([]);
+  const [agentsLoading, setAgentsLoading] = useState(false);
+  const [reqFilter, setReqFilter] = useState('Pending');
 
   // Page level permission check
   useEffect(() => {
@@ -138,10 +160,84 @@ export default function AdminPage() {
     }
   }
 
+  // Travel agent handlers
+  async function fetchAgentRequests(filterVal = reqFilter) {
+    setRequestsLoading(true);
+    try {
+      const data = await AgentApi.adminListRequests(filterVal);
+      setAgentRequests(data.requests || []);
+    } catch (err) {
+      window.showToast?.(err.message, 'error');
+    } finally {
+      setRequestsLoading(false);
+    }
+  }
+
+  async function fetchAgents() {
+    setAgentsLoading(true);
+    try {
+      const data = await AgentApi.adminListAgents();
+      setAgents(data.agents || []);
+    } catch (err) {
+      window.showToast?.(err.message, 'error');
+    } finally {
+      setAgentsLoading(false);
+    }
+  }
+
+  async function handleApproveRequest(reqId) {
+    if (!confirm('Approve this ticket request and trigger issuance?')) return;
+    try {
+      await AgentApi.adminApprove(reqId);
+      window.showToast?.('Request approved successfully ✓', 'success');
+      fetchAgentRequests(reqFilter);
+    } catch (err) {
+      window.showToast?.(err.message, 'error');
+    }
+  }
+
+  async function handleRejectRequest(reqId) {
+    const reason = prompt('Please enter a reason for rejecting this ticket request:');
+    if (reason === null) return; // cancelled
+    if (!reason.trim()) {
+      window.showToast?.('Rejection reason is required.', 'warning');
+      return;
+    }
+    try {
+      await AgentApi.adminReject(reqId, reason);
+      window.showToast?.('Request rejected and agent wallet refunded ✓', 'success');
+      fetchAgentRequests(reqFilter);
+    } catch (err) {
+      window.showToast?.(err.message, 'error');
+    }
+  }
+
+  async function handleTopupAgent(agentId, agencyName) {
+    const amountStr = prompt(`Enter top-up amount for ${agencyName} (PKR):`);
+    if (amountStr === null) return;
+    const amount = parseFloat(amountStr);
+    if (isNaN(amount) || amount <= 0) {
+      window.showToast?.('Please enter a valid positive amount.', 'warning');
+      return;
+    }
+    const note = prompt('Enter a transaction note (optional):', 'Agent manual bank transfer top-up');
+    if (note === null) return;
+
+    try {
+      await AgentApi.adminTopup(agentId, amount, note);
+      window.showToast?.('Agent wallet topped up successfully ✓', 'success');
+      fetchAgents();
+    } catch (err) {
+      window.showToast?.(err.message, 'error');
+    }
+  }
+
   function handleTabChange(tab) {
     setActiveTab(tab);
     if (tab === 'passengers') fetchPassengers();
     if (tab === 'analytics') fetchAirlineRevenue();
+    if (tab === 'requests') fetchAgentRequests(reqFilter);
+    if (tab === 'agents') fetchAgents();
   }
 
   async function handleEditFlight(flightId, currentStatus) {
@@ -361,6 +457,8 @@ export default function AdminPage() {
             <nav className="flex flex-col gap-1 list-none">
               {[
                 { id: 'dashboard', label: '📊 Dashboard' },
+                { id: 'requests', label: '🎫 Ticket Requests' },
+                { id: 'agents', label: '💼 Manage Agents' },
                 { id: 'flights', label: '✈️ Flights' },
                 { id: 'passengers', label: '👥 Passengers' },
                 { id: 'analytics', label: '📈 Analytics' },
@@ -368,52 +466,7 @@ export default function AdminPage() {
                 <button
                   key={t.id}
                   type="button"
-                  className={`w-full text-left px-4 py-2.5 rounded-md text-xs font-semibold uppercase tracking-wider transition-all duration-200 ${
-                    activeTab === t.id
-                      ? 'bg-brand-red/10 border-l-2 border-brand-red text-brand-white'
-                      : 'text-brand-gray-light hover:bg-brand-card hover:text-brand-white'
-                  }`}
-                  onClick={() => handleTabChange(t.id)}
-                >
-                  {t.label}
-                </button>
-              ))}
-            </nav>
-          </div>
-
-          <button className="w-full mt-6 py-2.5 border border-brand-gray-muted/30 text-brand-gray-light hover:text-brand-white hover:border-brand-red rounded-lg text-xs font-bold uppercase tracking-wider transition-all" onClick={logout}>
-            🚪 Logout
-          </button>
-        </aside>
-
-        {/* Content Area */}
-        <main className="flex-1 p-6 md:p-10 overflow-x-hidden">
-
-          {/* Subtab 1: Dashboard Panel */}
-          {activeTab === 'dashboard' && (
-            <div className="space-y-6 animate-fade-in-up">
-              <h2 className="text-xl font-bold font-heading">📊 Dashboard Overview</h2>
-
-              {/* KPI indicators card grids */}
-              <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-                <div className="p-6 bg-brand-charcoal border border-brand-gray-dark/40 rounded-xl shadow flex items-center gap-4">
-                  <div className="text-3xl">📋</div>
-                  <div>
-                    <div className="text-2xl font-extrabold">{kpis.bookings}</div>
-                    <div className="text-[9px] uppercase font-bold text-brand-gray-light tracking-wider">Total Bookings</div>
-                  </div>
-                </div>
-                <div className="p-6 bg-brand-charcoal border border-brand-gray-dark/40 rounded-xl shadow flex items-center gap-4">
-                  <div className="text-3xl text-green-500">✅</div>
-                  <div>
-                    <div className="text-2xl font-extrabold">{kpis.confirmed}</div>
-                    <div className="text-[9px] uppercase font-bold text-brand-gray-light tracking-wider">Confirmed</div>
-                  </div>
-                </div>
-                <div className="p-6 bg-brand-charcoal border border-brand-gray-dark/40 rounded-xl shadow flex items-center gap-4">
-                  <div className="text-3xl text-brand-red-light">💰</div>
-                  <div>
-                    <div className="text-xl font-extrabold tracking-tight">{formatPrice(kpis.revenue).split('.')[0]}</div>
+                  className={	ext-brand-red transform -rotate-45 transition-transform duration-500 }</div>
                     <div className="text-[9px] uppercase font-bold text-brand-gray-light tracking-wider">Total Revenue</div>
                   </div>
                 </div>
@@ -445,10 +498,155 @@ export default function AdminPage() {
                 </div>
 
                 {/* SVG Horizontal routes */}
-                <div className="lg:col-span-5 p-6 bg-brand-charcoal border border-brand-gray-dark/40 rounded-xl space-y-4 shadow-xl">
+                <div className="lg:col-span-5 p-6 bg-brand-charcoal/60 border border-brand-gray-dark/40 rounded-xl space-y-4 shadow-xl">
                   <h4 className="font-bold font-heading text-sm border-b border-brand-gray-dark/30 pb-2">🗺️ Popular Corridors</h4>
                   {renderPopularRoutesChartSVG()}
                 </div>
+              </div>
+            </div>
+          )}
+
+          {/* Subtab: Ticket Requests (Agent approval queue) */}
+          {activeTab === 'requests' && (
+            <div className="space-y-6 animate-fade-in-up">
+              <div className="flex justify-between items-center">
+                <h2 className="text-xl font-bold font-heading">🎫 Ticket Requests Queue</h2>
+                <select
+                  className="px-3 py-1.5 bg-brand-charcoal border border-brand-gray-dark/50 rounded text-brand-white text-xs font-semibold focus:outline-none"
+                  value={reqFilter}
+                  onChange={e => { setReqFilter(e.target.value); fetchAgentRequests(e.target.value); }}
+                >
+                  <option value="Pending">Pending Approval</option>
+                  <option value="Approved">Approved</option>
+                  <option value="Rejected">Rejected</option>
+                  <option value="Issued">Issued</option>
+                  <option value="all">All Statuses</option>
+                </select>
+              </div>
+
+              <div className="overflow-x-auto bg-brand-charcoal border border-brand-gray-dark/40 rounded-xl shadow-xl">
+                <table className="w-full text-xs text-left border-collapse">
+                  <thead>
+                    <tr className="bg-brand-black/50 border-b border-brand-gray-dark/40 uppercase tracking-wider text-[10px] text-brand-gray-light font-bold">
+                      <th className="px-6 py-4">ID</th>
+                      <th className="px-6 py-4">Agency</th>
+                      <th className="px-6 py-4">Route</th>
+                      <th className="px-6 py-4">Airline</th>
+                      <th className="px-6 py-4">Pax</th>
+                      <th className="px-6 py-4">Total Amount</th>
+                      <th className="px-6 py-4">Date Submitted</th>
+                      <th className="px-6 py-4">Status</th>
+                      {reqFilter === 'Pending' && <th className="px-6 py-4">Actions</th>}
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-brand-gray-dark/30">
+                    {requestsLoading ? (
+                      <tr><td colSpan="9" className="px-6 py-8 text-center"><div className="spinner mx-auto" /></td></tr>
+                    ) : agentRequests.length === 0 ? (
+                      <tr><td colSpan="9" className="px-6 py-8 text-center text-brand-gray-light italic">No ticket requests found.</td></tr>
+                    ) : (
+                      agentRequests.map(r => {
+                        const offer = r.offer_snapshot || {};
+                        const agency = r.travel_agents || {};
+                        return (
+                          <tr key={r.request_id} className="hover:bg-brand-card/30 transition-colors">
+                            <td className="px-6 py-4 font-mono font-bold text-brand-white">#{r.request_id}</td>
+                            <td className="px-6 py-4">
+                              <div className="font-bold text-brand-white">{agency.agency_name}</div>
+                              <div className="text-[10px] text-brand-gray-light">{agency.contact_name}</div>
+                            </td>
+                            <td className="px-6 py-4 font-bold">
+                              {offer.origin_iata} ➔ {offer.dest_iata}
+                            </td>
+                            <td className="px-6 py-4">{offer.airline_name}</td>
+                            <td className="px-6 py-4 font-semibold">{Array.isArray(r.passenger_data) ? r.passenger_data.length : 1}</td>
+                            <td className="px-6 py-4 font-extrabold text-brand-red-light">{formatPKR(r.total_amount)}</td>
+                            <td className="px-6 py-4">{formatDate(r.submitted_at)}</td>
+                            <td className="px-6 py-4">
+                              <span dangerouslySetInnerHTML={{ __html: getStatusBadge(r.request_status) }} />
+                            </td>
+                            {reqFilter === 'Pending' && (
+                              <td className="px-6 py-4">
+                                <div className="flex gap-2">
+                                  <button
+                                    className="px-2.5 py-1.5 bg-green-600/10 border border-green-500/20 text-green-400 text-[10px] font-bold rounded uppercase hover:bg-green-600/20 transition-colors"
+                                    onClick={() => handleApproveRequest(r.request_id)}
+                                  >
+                                    Approve
+                                  </button>
+                                  <button
+                                    className="px-2.5 py-1.5 bg-brand-red/10 border border-brand-red/20 text-brand-red-light text-[10px] font-bold rounded uppercase hover:bg-brand-red/20 transition-colors"
+                                    onClick={() => handleRejectRequest(r.request_id)}
+                                  >
+                                    Reject
+                                  </button>
+                                </div>
+                              </td>
+                            )}
+                          </tr>
+                        );
+                      })
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+
+          {/* Subtab: Manage Agents */}
+          {activeTab === 'agents' && (
+            <div className="space-y-6 animate-fade-in-up">
+              <h2 className="text-xl font-bold font-heading">💼 Travel Agent B2B Management</h2>
+
+              <div className="overflow-x-auto bg-brand-charcoal border border-brand-gray-dark/40 rounded-xl shadow-xl">
+                <table className="w-full text-xs text-left border-collapse">
+                  <thead>
+                    <tr className="bg-brand-black/50 border-b border-brand-gray-dark/40 uppercase tracking-wider text-[10px] text-brand-gray-light font-bold">
+                      <th className="px-6 py-4">Agency</th>
+                      <th className="px-6 py-4">Email</th>
+                      <th className="px-6 py-4">Phone</th>
+                      <th className="px-6 py-4">Location</th>
+                      <th className="px-6 py-4">Wallet Balance</th>
+                      <th className="px-6 py-4">Status</th>
+                      <th className="px-6 py-4">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-brand-gray-dark/30">
+                    {agentsLoading ? (
+                      <tr><td colSpan="7" className="px-6 py-8 text-center"><div className="spinner mx-auto" /></td></tr>
+                    ) : agents.length === 0 ? (
+                      <tr><td colSpan="7" className="px-6 py-8 text-center text-brand-gray-light italic">No agents registered yet.</td></tr>
+                    ) : (
+                      agents.map(a => {
+                        const wallet = a.agent_wallets?.[0] || a.agent_wallets || {};
+                        return (
+                          <tr key={a.agent_id} className="hover:bg-brand-card/30 transition-colors">
+                            <td className="px-6 py-4 font-bold text-brand-white">{a.agency_name}</td>
+                            <td className="px-6 py-4">{a.email}</td>
+                            <td className="px-6 py-4">{a.phone || '—'}</td>
+                            <td className="px-6 py-4">{a.city || '—'}</td>
+                            <td className="px-6 py-4 font-extrabold text-green-400">
+                              {formatPKR(wallet.balance || 0)}
+                            </td>
+                            <td className="px-6 py-4">
+                              <span className="px-2 py-0.5 rounded bg-green-500/10 border border-green-500/20 text-green-400 text-[9px] font-bold uppercase">
+                                {a.agent_status}
+                              </span>
+                            </td>
+                            <td className="px-6 py-4">
+                              <button
+                                className="px-3 py-1.5 bg-brand-red text-brand-white text-[10px] font-bold rounded uppercase hover:bg-brand-red-light transition-colors"
+                                onClick={() => handleTopupAgent(a.agent_id, a.agency_name)}
+                              >
+                                💰 Top Up
+                              </button>
+                            </td>
+                          </tr>
+                        );
+                      })
+                    )}
+                  </tbody>
+                </table>
               </div>
             </div>
           )}

@@ -5,7 +5,7 @@ import { useRouter, usePathname } from 'next/navigation';
 
 const AuthContext = createContext(null);
 
-const PUBLIC_ROUTES = ['/', '/login'];
+const PUBLIC_ROUTES = ['/', '/login', '/agent', '/agent/login', '/agent/register'];
 
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
@@ -20,7 +20,17 @@ export function AuthProvider({ children }) {
     setUser(u);
     setPassenger(p);
     setLoading(false);
-    if (!Auth.isLoggedIn() && !PUBLIC_ROUTES.includes(pathname) && !pathname.startsWith('/search')) {
+    
+    const isAgentLoggedIn = typeof window !== 'undefined' && !!localStorage.getItem('agent_token');
+    console.log("AUTH GUARD CHECK:", {
+      pathname,
+      isLoggedIn: Auth.isLoggedIn(),
+      isAgentLoggedIn,
+      publicRoute: PUBLIC_ROUTES.includes(pathname),
+      startsWithSearch: pathname.startsWith('/search')
+    });
+    if (!Auth.isLoggedIn() && !isAgentLoggedIn && !PUBLIC_ROUTES.includes(pathname) && !pathname.startsWith('/search')) {
+      console.log("AUTH GUARD REDIRECTING TO /login");
       router.push('/login');
     }
   }, [pathname]);

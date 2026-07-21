@@ -1,0 +1,395 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>AeroElite B2B Portal</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&amp;family=Outfit:wght@600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "surface-container": "#201f1f",
+                        "tertiary-container": "#717272",
+                        "on-surface": "#e5e2e1",
+                        "error-container": "#93000a",
+                        "surface": "#131313",
+                        "surface-container-highest": "#353534",
+                        "primary-container": "#dc2626",
+                        "on-primary-fixed": "#410002",
+                        "outline-variant": "#5c403c",
+                        "inverse-primary": "#bf0715",
+                        "on-secondary": "#313030",
+                        "primary": "#ffb4ab",
+                        "on-secondary-fixed": "#1c1b1b",
+                        "secondary-fixed": "#e5e2e1",
+                        "on-secondary-container": "#b7b5b4",
+                        "primary-fixed-dim": "#ffb4ab",
+                        "primary-fixed": "#ffdad6",
+                        "surface-container-high": "#2a2a2a",
+                        "background": "#131313",
+                        "surface-bright": "#3a3939",
+                        "surface-variant": "#353534",
+                        "inverse-surface": "#e5e2e1",
+                        "on-tertiary-fixed": "#1a1c1c",
+                        "tertiary-fixed-dim": "#c6c6c7",
+                        "secondary": "#c8c6c5",
+                        "on-primary-container": "#fff6f5",
+                        "on-background": "#e5e2e1",
+                        "outline": "#ac8884",
+                        "error": "#ffb4ab",
+                        "tertiary": "#c6c6c7",
+                        "on-error": "#690005",
+                        "on-error-container": "#ffdad6",
+                        "surface-container-lowest": "#0e0e0e",
+                        "on-surface-variant": "#e6bdb8",
+                        "tertiary-fixed": "#e2e2e2",
+                        "secondary-container": "#474746",
+                        "on-primary": "#690005",
+                        "on-tertiary": "#2f3131",
+                        "surface-dim": "#131313",
+                        "inverse-on-surface": "#313030",
+                        "on-secondary-fixed-variant": "#474746",
+                        "surface-tint": "#ffb4ab",
+                        "secondary-fixed-dim": "#c8c6c5",
+                        "surface-container-low": "#1c1b1b",
+                        "on-tertiary-container": "#f8f8f8",
+                        "on-tertiary-fixed-variant": "#454747",
+                        "on-primary-fixed-variant": "#93000b"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.125rem",
+                        "lg": "0.25rem",
+                        "xl": "0.5rem",
+                        "full": "0.75rem"
+                    },
+                    "spacing": {
+                        "section-gap": "48px",
+                        "max-width": "1440px",
+                        "container-padding": "24px",
+                        "base": "8px",
+                        "gutter": "16px"
+                    },
+                    "fontFamily": {
+                        "mono-data": ["Inter"],
+                        "label-md": ["Inter"],
+                        "display-lg": ["Outfit"],
+                        "headline-lg-mobile": ["Outfit"],
+                        "headline-md": ["Outfit"],
+                        "body-md": ["Inter"],
+                        "headline-lg": ["Outfit"],
+                        "body-lg": ["Inter"]
+                    },
+                    "fontSize": {
+                        "mono-data": ["14px", { "lineHeight": "20px", "fontWeight": "500" }],
+                        "label-md": ["14px", { "lineHeight": "20px", "letterSpacing": "0.05em", "fontWeight": "600" }],
+                        "display-lg": ["48px", { "lineHeight": "56px", "letterSpacing": "-0.02em", "fontWeight": "700" }],
+                        "headline-lg-mobile": ["24px", { "lineHeight": "32px", "fontWeight": "600" }],
+                        "headline-md": ["24px", { "lineHeight": "32px", "fontWeight": "600" }],
+                        "body-md": ["16px", { "lineHeight": "24px", "fontWeight": "400" }],
+                        "headline-lg": ["32px", { "lineHeight": "40px", "letterSpacing": "-0.01em", "fontWeight": "600" }],
+                        "body-lg": ["18px", { "lineHeight": "28px", "fontWeight": "400" }]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        body {
+            background-color: #0A0A0A;
+            color: #e5e2e1;
+        }
+        .glass-card {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+        }
+        .neon-glow-red {
+            box-shadow: 0 0 12px rgba(220, 38, 38, 0.6);
+        }
+        .input-glass {
+            background: #050505;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        .input-glass:focus-within {
+            border-color: #DC2626;
+            box-shadow: 0 0 8px rgba(220, 38, 38, 0.4);
+        }
+    </style>
+</head>
+<body class="antialiased min-h-screen flex flex-col font-body-md text-body-md overflow-x-hidden">
+<!-- TopNavBar -->
+<header class="bg-surface/30 dark:bg-surface/30 backdrop-blur-md text-primary dark:text-primary shadow-2xl shadow-black/50 border-b border-white/10 flex justify-between items-center px-container-padding w-full h-20 sticky top-0 z-50">
+<div class="flex items-center gap-6">
+<div class="flex items-center gap-3">
+<img alt="AeroElite B2B" class="w-10 h-10 object-contain rounded" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAdPP4zpqjjPqiBiKBQd7UqFxHGEsDAMcHlEbcMk2NItdDHi4wmwq4dD0BMl1akQ5ATBK56xmolpwXr49QDBRsGIKSoSHjybOIJ2aZKy3zECFMq1_49LrpFAk0swIPbweN-nwflBP3bStwrK3LH5c6R8qanTmeEvYiMuD88qXCSX_Fqv8HrG9tfC3dkHbjkYwWNQVut8Xe_7KUel-7ut-DNfBKN_zxUGpNemlw1w2Qta7RBxWGQZGg_"/>
+<h1 class="font-display-lg text-display-lg font-bold text-primary dark:text-primary text-xl">AeroElite B2B</h1>
+</div>
+<!-- Navigation Links -->
+<nav class="hidden md:flex gap-6 ml-8">
+<a class="text-primary font-bold border-b-2 border-primary pb-1 active:scale-95 transition-transform font-label-md text-label-md" href="#">Dashboard</a>
+<a class="text-on-surface/70 font-medium hover:text-on-surface hover:bg-white/5 transition-all duration-300 active:scale-95 px-2 py-1 rounded font-label-md text-label-md" href="#">Bookings</a>
+<a class="text-on-surface/70 font-medium hover:text-on-surface hover:bg-white/5 transition-all duration-300 active:scale-95 px-2 py-1 rounded font-label-md text-label-md" href="#">Inventory</a>
+<a class="text-on-surface/70 font-medium hover:text-on-surface hover:bg-white/5 transition-all duration-300 active:scale-95 px-2 py-1 rounded font-label-md text-label-md" href="#">Reports</a>
+</nav>
+</div>
+<div class="flex items-center gap-4">
+<button class="bg-[#DC2626] hover:bg-[#bf0715] text-white px-4 py-2 rounded font-label-md text-label-md transition-all neon-glow-red">
+                Top Up Wallet
+            </button>
+<div class="flex items-center gap-2">
+<button class="p-2 text-on-surface/70 hover:text-on-surface hover:bg-white/5 rounded-full transition-all duration-300 active:scale-95">
+<span class="material-symbols-outlined">account_balance_wallet</span>
+</button>
+<button class="p-2 text-on-surface/70 hover:text-on-surface hover:bg-white/5 rounded-full transition-all duration-300 active:scale-95 relative">
+<span class="material-symbols-outlined">notifications</span>
+<span class="absolute top-1 right-1 w-2 h-2 bg-primary-container rounded-full neon-glow-red"></span>
+</button>
+<button class="p-2 text-on-surface/70 hover:text-on-surface hover:bg-white/5 rounded-full transition-all duration-300 active:scale-95 flex items-center gap-1">
+<span class="material-symbols-outlined">language</span>
+<span class="font-mono-data text-mono-data">PKR</span>
+</button>
+</div>
+<div class="flex items-center gap-2 ml-4 pl-4 border-l border-white/10">
+<div class="relative">
+<img class="w-10 h-10 rounded-full object-cover border border-white/20" data-alt="A professional headshot of a travel agent in a sleek, dimly lit premium office setting. The lighting is moody with subtle red accents in the background, matching a high-tech modern aesthetic. The agent looks focused and confident. Deep obsidian dark mode style." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCyFIYi3tfxTuWARefr1x8uXlTh7JiQa6YzXOHY_C3M1JTR4YaxZsxG1DSdr5zuAJzaTe2jwkkwUOjztdo-QzHWBAxvxIX_RxuBrC7T8oEFp4osodZOcJf64hJIcszSxyaxNTmTjaH-8gF8GjAPhqSPvS3wGIGRbh-BRZO0JE7DLFosdYKnFxYprF-3HWEHzo4kom48zsjhG5ce_Anb6Ghb9jtenzA5bGo-JeIrfmK_AFdlF_D3JUFP"/>
+<div class="absolute bottom-0 right-0 w-3 h-3 bg-green-500 rounded-full border-2 border-[#0A0A0A]"></div>
+</div>
+</div>
+</div>
+</header>
+<main class="flex-grow flex flex-col items-center w-full px-container-padding py-section-gap gap-gutter max-w-max-width mx-auto">
+<!-- Search Hero Section -->
+<section class="w-full glass-card rounded-xl p-6 relative overflow-hidden mb-8">
+<div class="absolute inset-0 bg-gradient-to-br from-primary-container/5 to-transparent pointer-events-none"></div>
+<div class="relative z-10 flex flex-col md:flex-row gap-4 items-end">
+<!-- Origin -->
+<div class="flex-1 w-full input-glass rounded-lg p-3 flex flex-col group">
+<label class="text-on-surface-variant text-xs mb-1 font-label-md text-label-md uppercase tracking-wider">Origin</label>
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-tertiary">flight_takeoff</span>
+<input class="bg-transparent border-none outline-none text-on-surface w-full font-mono-data text-mono-data focus:ring-0 p-0" placeholder="City or Airport" type="text" value="Dubai (DXB)"/>
+</div>
+</div>
+<!-- Swap Button -->
+<button class="p-3 glass-card rounded-full hover:bg-white/10 transition-colors mx-auto md:mx-0 z-20 -my-4 md:my-0 md:-mx-4 shadow-lg">
+<span class="material-symbols-outlined text-on-surface">swap_horiz</span>
+</button>
+<!-- Destination -->
+<div class="flex-1 w-full input-glass rounded-lg p-3 flex flex-col">
+<label class="text-on-surface-variant text-xs mb-1 font-label-md text-label-md uppercase tracking-wider">Destination</label>
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-tertiary">flight_land</span>
+<input class="bg-transparent border-none outline-none text-on-surface w-full font-mono-data text-mono-data focus:ring-0 p-0" placeholder="City or Airport" type="text" value="London (LHR)"/>
+</div>
+</div>
+<!-- Dates -->
+<div class="flex-1 w-full input-glass rounded-lg p-3 flex flex-col">
+<label class="text-on-surface-variant text-xs mb-1 font-label-md text-label-md uppercase tracking-wider">Dates</label>
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-tertiary">calendar_month</span>
+<input class="bg-transparent border-none outline-none text-on-surface w-full font-mono-data text-mono-data focus:ring-0 p-0" type="text" value="Oct 24 - Oct 31"/>
+</div>
+</div>
+<!-- Travelers -->
+<div class="w-full md:w-48 input-glass rounded-lg p-3 flex flex-col">
+<label class="text-on-surface-variant text-xs mb-1 font-label-md text-label-md uppercase tracking-wider">Travelers &amp; Class</label>
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-tertiary">group</span>
+<input class="bg-transparent border-none outline-none text-on-surface w-full font-mono-data text-mono-data focus:ring-0 p-0 text-sm overflow-hidden text-ellipsis whitespace-nowrap" type="text" value="1 Adult, Economy"/>
+</div>
+</div>
+<!-- Search Action -->
+<button class="w-full md:w-auto bg-[#DC2626] hover:bg-[#bf0715] text-white px-8 py-4 rounded-lg font-headline-md text-headline-md text-lg transition-all neon-glow-red flex items-center justify-center gap-2 whitespace-nowrap h-[68px]">
+<span class="material-symbols-outlined">search</span>
+                    Search Flights
+                </button>
+</div>
+</section>
+<!-- Main Workspace -->
+<div class="flex flex-col md:flex-row w-full gap-gutter items-start">
+<!-- Sidebar (Filters) -->
+<aside class="w-full md:w-[280px] shrink-0 flex flex-col gap-4">
+<div class="glass-card rounded-xl p-4 flex flex-col gap-6 sticky top-28">
+<h3 class="font-headline-md text-headline-md text-lg border-b border-white/10 pb-2">Filters</h3>
+<!-- Stops -->
+<div class="flex flex-col gap-3">
+<h4 class="font-label-md text-label-md text-on-surface-variant">Stops</h4>
+<label class="flex items-center gap-3 cursor-pointer group">
+<input checked="" class="form-checkbox rounded bg-surface border-white/20 text-[#DC2626] focus:ring-[#DC2626] focus:ring-offset-surface" type="checkbox"/>
+<span class="font-body-md text-body-md group-hover:text-white transition-colors">Direct</span>
+<span class="ml-auto font-mono-data text-mono-data text-tertiary">PKR 125K</span>
+</label>
+<label class="flex items-center gap-3 cursor-pointer group">
+<input class="form-checkbox rounded bg-surface border-white/20 text-[#DC2626] focus:ring-[#DC2626] focus:ring-offset-surface" type="checkbox"/>
+<span class="font-body-md text-body-md group-hover:text-white transition-colors">1 Stop</span>
+<span class="ml-auto font-mono-data text-mono-data text-tertiary">PKR 98K</span>
+</label>
+</div>
+<!-- Price Slider -->
+<div class="flex flex-col gap-3">
+<div class="flex justify-between items-center">
+<h4 class="font-label-md text-label-md text-on-surface-variant">Price</h4>
+<span class="font-mono-data text-mono-data text-xs">Up to 300K</span>
+</div>
+<input class="w-full h-1 bg-white/20 rounded-lg appearance-none cursor-pointer accent-[#DC2626]" max="500000" min="50000" type="range" value="300000"/>
+</div>
+<!-- Times -->
+<div class="flex flex-col gap-3 border-t border-white/10 pt-4">
+<h4 class="font-label-md text-label-md text-on-surface-variant">Departure Time</h4>
+<div class="grid grid-cols-2 gap-2">
+<button class="glass-card p-2 rounded flex flex-col items-center justify-center gap-1 hover:bg-white/10 transition-colors border-primary-container/50">
+<span class="material-symbols-outlined text-xl">brightness_5</span>
+<span class="text-xs">Morning</span>
+</button>
+<button class="glass-card p-2 rounded flex flex-col items-center justify-center gap-1 hover:bg-white/10 transition-colors opacity-50">
+<span class="material-symbols-outlined text-xl">bedtime</span>
+<span class="text-xs">Evening</span>
+</button>
+</div>
+</div>
+</div>
+</aside>
+<!-- Search Results Area -->
+<div class="flex-1 w-full flex flex-col gap-6">
+<!-- Price Calendar Strip -->
+<div class="w-full glass-card rounded-xl p-2 flex overflow-x-auto snap-x hide-scrollbar">
+<div class="flex items-center w-full min-w-max justify-between px-2">
+<button class="p-2 text-on-surface/50 hover:text-white"><span class="material-symbols-outlined">chevron_left</span></button>
+<div class="flex-1 flex justify-center gap-2">
+<!-- Days -->
+<div class="flex flex-col items-center p-2 rounded hover:bg-white/5 cursor-pointer min-w-[80px] snap-center">
+<span class="text-xs text-on-surface-variant font-label-md text-label-md">Mon, 21</span>
+<span class="font-mono-data text-mono-data text-sm">PKR 142k</span>
+</div>
+<div class="flex flex-col items-center p-2 rounded bg-primary-container/10 border border-primary-container/30 cursor-pointer min-w-[80px] snap-center relative">
+<div class="absolute -top-1 w-8 h-1 bg-[#DC2626] rounded-full neon-glow-red"></div>
+<span class="text-xs text-[#DC2626] font-label-md text-label-md">Tue, 22</span>
+<span class="font-mono-data text-mono-data text-sm font-bold text-[#DC2626]">PKR 125k</span>
+</div>
+<div class="flex flex-col items-center p-2 rounded hover:bg-white/5 cursor-pointer min-w-[80px] snap-center">
+<span class="text-xs text-on-surface-variant font-label-md text-label-md">Wed, 23</span>
+<span class="font-mono-data text-mono-data text-sm">PKR 135k</span>
+</div>
+<div class="flex flex-col items-center p-2 rounded hover:bg-white/5 cursor-pointer min-w-[80px] snap-center">
+<span class="text-xs text-on-surface-variant font-label-md text-label-md">Thu, 24</span>
+<span class="font-mono-data text-mono-data text-sm">PKR 130k</span>
+</div>
+</div>
+<button class="p-2 text-on-surface/50 hover:text-white"><span class="material-symbols-outlined">chevron_right</span></button>
+</div>
+</div>
+<!-- Flight List -->
+<div class="flex flex-col gap-4">
+<!-- Flight Card 1 -->
+<div class="glass-card rounded-xl p-4 md:p-6 hover:bg-white/[0.05] transition-all duration-300 border-l-4 border-l-transparent hover:border-l-[#DC2626] group">
+<div class="flex flex-col md:flex-row justify-between items-center gap-6">
+<!-- Airline Info -->
+<div class="flex items-center gap-4 w-full md:w-auto">
+<div class="w-12 h-12 bg-white rounded-lg flex items-center justify-center p-1">
+<img class="w-full h-full object-contain" data-alt="A minimalist logo for Emirates Airlines, featuring smooth curved lines and elegant red and gold branding on a pure white background. The image should be clean and vector-like." src="https://lh3.googleusercontent.com/aida-public/AB6AXuAQBljZTZJVb7Fszh3QJ6DEsxf4_NWvLXg2u8e9gjTPz9A4elPc__NONVarincqW4Oc6m-tF5UAW9LNGl5FFphpSrubchuLtI0kwAcV2oHuF0o8J8sfY99pFTmQwHfpAgETng5FgNaxTs1cduRorWfcda-zKtNaOfQLgoJ3eAnWzT-3lmOtjSdOvU5KtgheREbgH4_u8W03VUDBKIXSTSVECp0oEtb4ZdMUTkVif3T4BupperdAlQem"/>
+</div>
+<div class="flex flex-col">
+<span class="font-headline-md text-headline-md text-base">Emirates</span>
+<span class="text-xs text-on-surface-variant font-mono-data text-mono-data">EK-622 • Boeing 777</span>
+</div>
+</div>
+<!-- Flight Timeline -->
+<div class="flex-1 flex items-center justify-center gap-4 w-full px-4">
+<div class="flex flex-col items-end">
+<span class="font-headline-md text-headline-md text-lg">10:30</span>
+<span class="font-mono-data text-mono-data text-sm text-on-surface-variant">DXB</span>
+</div>
+<div class="flex-1 flex flex-col items-center relative min-w-[120px] max-w-[300px]">
+<span class="text-[10px] text-tertiary mb-1">7h 15m</span>
+<div class="w-full h-[2px] bg-white/10 relative flex items-center justify-center">
+<div class="absolute left-0 w-2 h-2 rounded-full bg-white/30"></div>
+<div class="w-2 h-2 rounded-full bg-white/30"></div> <!-- Layover dot -->
+<div class="absolute right-0 w-2 h-2 rounded-full bg-[#DC2626] neon-glow-red"></div>
+</div>
+<span class="text-[10px] text-tertiary mt-1 text-[#DC2626]">1 Stop (DOH)</span>
+</div>
+<div class="flex flex-col items-start">
+<span class="font-headline-md text-headline-md text-lg">17:45</span>
+<span class="font-mono-data text-mono-data text-sm text-on-surface-variant">LHR</span>
+</div>
+</div>
+<!-- Price & Action -->
+<div class="flex flex-row md:flex-col items-center md:items-end justify-between w-full md:w-auto gap-4 md:gap-2 border-t md:border-t-0 border-white/10 pt-4 md:pt-0">
+<div class="flex flex-col items-start md:items-end">
+<span class="text-xs text-on-surface-variant mb-[-4px]">Total Price</span>
+<span class="font-headline-lg-mobile text-headline-lg-mobile md:font-headline-lg md:text-headline-lg text-[#DC2626]">PKR 125,000</span>
+</div>
+<button class="bg-transparent border border-white/20 hover:border-[#DC2626] hover:bg-[#DC2626]/10 px-6 py-2 rounded font-label-md text-label-md transition-colors text-white">
+                                    Select
+                                </button>
+</div>
+</div>
+</div>
+<!-- Flight Card 2 (Direct) -->
+<div class="glass-card rounded-xl p-4 md:p-6 hover:bg-white/[0.05] transition-all duration-300 border-l-4 border-l-[#DC2626] bg-gradient-to-r from-primary-container/5 to-transparent relative overflow-hidden">
+<div class="absolute top-0 right-0 bg-[#DC2626] text-white text-[10px] px-3 py-1 rounded-bl-lg font-bold tracking-wider uppercase">
+                            Cheapest Direct
+                        </div>
+<div class="flex flex-col md:flex-row justify-between items-center gap-6">
+<div class="flex items-center gap-4 w-full md:w-auto">
+<div class="w-12 h-12 bg-white rounded-lg flex items-center justify-center p-1">
+<img class="w-full h-full object-contain" data-alt="A minimalist logo for PIA (Pakistan International Airlines), featuring crisp green and white branding on a solid white background. Clean, modern, vector-style." src="https://lh3.googleusercontent.com/aida-public/AB6AXuA79GOtDJVLCI-Vh2GTOFjxx4rJt0bHXO0YFF9IaZOGLi0623neaLeIrbg1I11k_YN4ooFjed67cqxTPpbBcxJ3g_NwudJ_iAtnOfda8dLSxKTugx1YkvKNfi-amcmmnTt__wH_E4eVev4O1hgyYI20qa1EfbviWf-s2tdqPb_4i0RP4uJ7ddjB6UfbMmZBau1YY546W1YD8MjOHOs3M707vINtc_Fd-Tywi9GgTzlyq-4If6KtY47Y"/>
+</div>
+<div class="flex flex-col">
+<span class="font-headline-md text-headline-md text-base">PIA</span>
+<span class="text-xs text-on-surface-variant font-mono-data text-mono-data">PK-785 • Airbus A330</span>
+</div>
+</div>
+<div class="flex-1 flex items-center justify-center gap-4 w-full px-4">
+<div class="flex flex-col items-end">
+<span class="font-headline-md text-headline-md text-lg">14:00</span>
+<span class="font-mono-data text-mono-data text-sm text-on-surface-variant">DXB</span>
+</div>
+<div class="flex-1 flex flex-col items-center relative min-w-[120px] max-w-[300px]">
+<span class="text-[10px] text-tertiary mb-1">6h 45m</span>
+<div class="w-full h-[2px] bg-white/20 relative flex items-center justify-center">
+<div class="absolute left-0 w-2 h-2 rounded-full bg-white/50"></div>
+<div class="absolute right-0 w-2 h-2 rounded-full bg-[#DC2626] neon-glow-red"></div>
+</div>
+<span class="text-[10px] text-[#DC2626] mt-1 bg-[#DC2626]/20 px-2 py-[2px] rounded-full">Direct</span>
+</div>
+<div class="flex flex-col items-start">
+<span class="font-headline-md text-headline-md text-lg">20:45</span>
+<span class="font-mono-data text-mono-data text-sm text-on-surface-variant">LHR</span>
+</div>
+</div>
+<div class="flex flex-row md:flex-col items-center md:items-end justify-between w-full md:w-auto gap-4 md:gap-2 border-t md:border-t-0 border-white/10 pt-4 md:pt-0">
+<div class="flex flex-col items-start md:items-end">
+<span class="text-xs text-on-surface-variant mb-[-4px]">Total Price</span>
+<span class="font-headline-lg-mobile text-headline-lg-mobile md:font-headline-lg md:text-headline-lg text-[#DC2626]">PKR 155,000</span>
+</div>
+<button class="bg-[#DC2626] hover:bg-[#bf0715] px-6 py-2 rounded font-label-md text-label-md transition-colors text-white neon-glow-red">
+                                    Select
+                                </button>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</main>
+<!-- Floating Wallet Widget -->
+<div class="fixed bottom-6 right-6 glass-card px-4 py-3 rounded-full flex items-center gap-3 shadow-2xl z-50 border border-[#DC2626]/30 bg-surface/80 backdrop-blur-xl group cursor-pointer hover:bg-surface transition-colors">
+<div class="w-8 h-8 rounded-full bg-[#DC2626]/20 flex items-center justify-center group-hover:bg-[#DC2626]/40 transition-colors">
+<span class="material-symbols-outlined text-[#DC2626] text-sm">account_balance_wallet</span>
+</div>
+<div class="flex flex-col pr-2">
+<span class="text-[10px] text-on-surface-variant uppercase tracking-wider font-label-md">Agent Balance</span>
+<span class="font-mono-data text-mono-data text-sm font-bold text-white group-hover:text-[#DC2626] transition-colors drop-shadow-[0_0_8px_rgba(220,38,38,0.5)]">450,000 PKR</span>
+</div>
+</div>
+</body></html>

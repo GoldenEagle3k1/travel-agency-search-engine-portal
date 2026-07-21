@@ -1,0 +1,309 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>AeroElite | Agent Marketing Landing Page</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&amp;family=Outfit:wght@400;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+          darkMode: "class",
+          theme: {
+            extend: {
+              "colors": {
+                      "surface-container-low": "#1c1b1b",
+                      "outline": "#ac8884",
+                      "on-secondary-fixed": "#1c1b1b",
+                      "on-primary-container": "#fff6f5",
+                      "on-tertiary": "#2f3131",
+                      "on-tertiary-fixed-variant": "#454747",
+                      "surface-tint": "#ffb4ab",
+                      "on-secondary-container": "#b7b5b4",
+                      "tertiary-fixed": "#e2e2e2",
+                      "on-secondary-fixed-variant": "#474746",
+                      "on-tertiary-container": "#f8f8f8",
+                      "surface-container": "#201f1f",
+                      "on-error-container": "#ffdad6",
+                      "on-error": "#690005",
+                      "outline-variant": "#5c403c",
+                      "surface-variant": "#353534",
+                      "surface-dim": "#131313",
+                      "secondary-fixed": "#e5e2e1",
+                      "primary-container": "#dc2626",
+                      "inverse-surface": "#e5e2e1",
+                      "inverse-on-surface": "#313030",
+                      "surface-container-high": "#2a2a2a",
+                      "on-surface": "#e5e2e1",
+                      "tertiary-fixed-dim": "#c6c6c7",
+                      "on-primary-fixed-variant": "#93000b",
+                      "primary-fixed": "#ffdad6",
+                      "primary": "#ffb4ab",
+                      "secondary-container": "#474746",
+                      "primary-fixed-dim": "#ffb4ab",
+                      "on-primary": "#690005",
+                      "surface": "#131313",
+                      "error": "#ffb4ab",
+                      "tertiary-container": "#717272",
+                      "tertiary": "#c6c6c7",
+                      "on-surface-variant": "#e6bdb8",
+                      "on-background": "#e5e2e1",
+                      "inverse-primary": "#bf0715",
+                      "on-primary-fixed": "#410002",
+                      "surface-container-lowest": "#0e0e0e",
+                      "on-tertiary-fixed": "#1a1c1c",
+                      "on-secondary": "#313030",
+                      "error-container": "#93000a",
+                      "background": "#131313",
+                      "surface-bright": "#3a3939",
+                      "secondary-fixed-dim": "#c8c6c5",
+                      "surface-container-highest": "#353534",
+                      "secondary": "#c8c6c5"
+              },
+              "borderRadius": {
+                      "DEFAULT": "0.125rem",
+                      "lg": "0.25rem",
+                      "xl": "0.5rem",
+                      "full": "0.75rem"
+              },
+              "spacing": {
+                      "base": "8px",
+                      "max-width": "1440px",
+                      "gutter": "16px",
+                      "container-padding": "24px",
+                      "section-gap": "48px"
+              },
+              "fontFamily": {
+                      "label-md": [
+                              "Inter"
+                      ],
+                      "headline-md": [
+                              "Outfit"
+                      ],
+                      "headline-lg": [
+                              "Outfit"
+                      ],
+                      "body-lg": [
+                              "Inter"
+                      ],
+                      "body-md": [
+                              "Inter"
+                      ],
+                      "mono-data": [
+                              "Inter"
+                      ],
+                      "display-lg": [
+                              "Outfit"
+                      ],
+                      "headline-lg-mobile": [
+                              "Outfit"
+                      ]
+              },
+              "fontSize": {
+                      "label-md": [
+                              "14px",
+                              {
+                                      "lineHeight": "20px",
+                                      "letterSpacing": "0.05em",
+                                      "fontWeight": "600"
+                              }
+                      ],
+                      "headline-md": [
+                              "24px",
+                              {
+                                      "lineHeight": "32px",
+                                      "fontWeight": "600"
+                              }
+                      ],
+                      "headline-lg": [
+                              "32px",
+                              {
+                                      "lineHeight": "40px",
+                                      "letterSpacing": "-0.01em",
+                                      "fontWeight": "600"
+                              }
+                      ],
+                      "body-lg": [
+                              "18px",
+                              {
+                                      "lineHeight": "28px",
+                                      "fontWeight": "400"
+                              }
+                      ],
+                      "body-md": [
+                              "16px",
+                              {
+                                      "lineHeight": "24px",
+                                      "fontWeight": "400"
+                              }
+                      ],
+                      "mono-data": [
+                              "14px",
+                              {
+                                      "lineHeight": "20px",
+                                      "fontWeight": "500"
+                              }
+                      ],
+                      "display-lg": [
+                              "48px",
+                              {
+                                      "lineHeight": "56px",
+                                      "letterSpacing": "-0.02em",
+                                      "fontWeight": "700"
+                              }
+                      ],
+                      "headline-lg-mobile": [
+                              "24px",
+                              {
+                                      "lineHeight": "32px",
+                                      "fontWeight": "600"
+                              }
+                      ]
+              }
+      },
+          },
+        }
+      </script>
+<style>
+        .glass-card {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(12px);
+        }
+        .crimson-glow {
+            box-shadow: 0 0 24px rgba(220, 38, 38, 0.2);
+        }
+        .crimson-glow-hover:hover {
+            box-shadow: 0 0 32px rgba(220, 38, 38, 0.4);
+        }
+      </style>
+</head>
+<body class="bg-background text-on-background min-h-screen flex flex-col font-body-md antialiased overflow-x-hidden selection:bg-primary-container selection:text-white">
+<!-- TopAppBar -->
+<header class="bg-surface/80 dark:bg-surface/80 backdrop-blur-xl fixed top-0 w-full z-50 border-b border-white/10 shadow-2xl transition-all duration-300 ease-in-out">
+<div class="flex justify-between items-center px-container-padding h-20 max-w-max-width mx-auto">
+<div class="flex items-center gap-4">
+<img alt="AeroElite Logo" class="h-8 w-8 object-contain" src="https://lh3.googleusercontent.com/aida/AP1WRLuXSZn3kxRiakHnOvBXGZ90nT3mdCAAtYmNig4jJ8UvQtycOkEFUe7cft1xIM86A_2saveTDYWc3asysIFOCvOifQCxaNNLYSWrGDLjdOrfEsyZEravdNBJpli-9qPWIMXXJQLHF4kMzp3gE9URtxTOd8ibXjxBX16EogHILlAaSxJCs3Cx3lSC68pueV2BdU3Ej3jBbU0ulh_K52-tx9M_uLn_08BvS8vw65ZNG7gTGbp5bIHTHkc3nf8"/>
+<div class="font-headline-lg text-headline-lg font-bold text-primary tracking-tight">AeroElite</div>
+</div>
+<nav class="hidden md:flex items-center gap-8">
+<a class="font-label-md text-label-md text-on-surface-variant hover:text-primary transition-colors duration-300 ease-in-out" href="#">Solutions</a>
+<a class="font-label-md text-label-md text-primary border-b-2 border-primary pb-1 duration-300 ease-in-out" href="#">Network</a>
+<a class="font-label-md text-label-md text-on-surface-variant hover:text-primary transition-colors duration-300 ease-in-out" href="#">Technology</a>
+<a class="font-label-md text-label-md text-on-surface-variant hover:text-primary transition-colors duration-300 ease-in-out" href="#">Pricing</a>
+</nav>
+<div class="flex items-center gap-4">
+<button class="hidden md:block font-label-md text-label-md text-on-surface-variant hover:text-primary transition-colors duration-300 ease-in-out">Agent Login</button>
+<button class="bg-primary-container text-white px-6 py-2 rounded font-label-md text-label-md hover:opacity-80 transition-all duration-300 ease-in-out crimson-glow-hover">Join Network</button>
+</div>
+</div>
+</header>
+<main class="flex-grow pt-20">
+<!-- Hero Section -->
+<section class="relative min-h-[90vh] flex items-center justify-center px-container-padding overflow-hidden">
+<div class="absolute inset-0 z-0">
+<div class="w-full h-full bg-cover bg-center opacity-30" data-alt="A sprawling, abstract network of glowing red data lines and nodes over a deep black background, resembling a high-tech global flight map. The aesthetic is sleek, minimalist, and ultra-modern B2B technology with a dark mode glassmorphic feel." style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuDrRIEM4vlM2qaHSqIWMlwG9TqsyKXGvjPuTrVTPplqUDyOFos3_QyZE5dZL1zNxVepcNvh9TQYRv8aYn9HZPqYlqpMSLyNAChMc0NvCoqfQSdATeHoqvJScrZjcyyPcbKlb_HuO2TObHO_NrajbHp3JoKGNKALnZmOL-bKweoo_saklL5O2WQyCjpx4ai2DvHAJkZlhlpBBMh_kCbu16ObMnb1P33N2JdTUbUbRtET2csy3ybG6aFo')"></div>
+<div class="absolute inset-0 bg-gradient-to-t from-background via-background/80 to-transparent"></div>
+</div>
+<div class="relative z-10 max-w-4xl mx-auto text-center">
+<h1 class="font-display-lg text-display-lg md:text-[64px] md:leading-[72px] text-white mb-6">The Future of <span class="text-primary-container">Travel Management</span></h1>
+<p class="font-body-lg text-body-lg text-on-surface-variant mb-10 max-w-2xl mx-auto">Empowering elite agents with next-generation tools, real-time global availability, and seamless settlement workflows in one unified, high-performance platform.</p>
+<div class="flex flex-col sm:flex-row items-center justify-center gap-4">
+<button class="w-full sm:w-auto bg-primary-container text-white px-8 py-4 rounded font-label-md text-label-md crimson-glow crimson-glow-hover transition-all duration-300">Join the Network</button>
+<button class="w-full sm:w-auto glass-card text-on-surface px-8 py-4 rounded font-label-md text-label-md hover:bg-surface-container transition-all duration-300">Explore Solutions</button>
+</div>
+</div>
+</section>
+<!-- Features Grid -->
+<section class="py-section-gap px-container-padding max-w-max-width mx-auto">
+<div class="text-center mb-16">
+<h2 class="font-headline-lg text-headline-lg text-white mb-4">Built for the Modern Agent</h2>
+<p class="font-body-md text-body-md text-on-surface-variant max-w-xl mx-auto">Precision-engineered tools designed to streamline complex itineraries and accelerate agency growth.</p>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+<div class="glass-card rounded-xl p-8 hover:-translate-y-1 transition-transform duration-300">
+<div class="w-12 h-12 rounded-full bg-primary-container/10 flex items-center justify-center mb-6">
+<span class="material-symbols-outlined text-primary-container text-[24px]">api</span>
+</div>
+<h3 class="font-headline-md text-headline-md text-white mb-3">Live API Search</h3>
+<p class="font-body-md text-body-md text-on-surface-variant">Instant global availability at your fingertips. Connect directly to major carriers and aggregators with millisecond response times.</p>
+</div>
+<div class="glass-card rounded-xl p-8 hover:-translate-y-1 transition-transform duration-300">
+<div class="w-12 h-12 rounded-full bg-primary-container/10 flex items-center justify-center mb-6">
+<span class="material-symbols-outlined text-primary-container text-[24px]">account_balance_wallet</span>
+</div>
+<h3 class="font-headline-md text-headline-md text-white mb-3">Digital Wallet</h3>
+<p class="font-body-md text-body-md text-on-surface-variant">Secure, instantaneous settlement and top-ups. Manage agency funds and execute bookings without traditional credit bottlenecks.</p>
+</div>
+<div class="glass-card rounded-xl p-8 hover:-translate-y-1 transition-transform duration-300">
+<div class="w-12 h-12 rounded-full bg-primary-container/10 flex items-center justify-center mb-6">
+<span class="material-symbols-outlined text-primary-container text-[24px]">verified_user</span>
+</div>
+<h3 class="font-headline-md text-headline-md text-white mb-3">Owner Approval</h3>
+<p class="font-body-md text-body-md text-on-surface-variant">Seamless workflow management for agency owners. Set booking limits, require approvals, and monitor all sub-agent activity in real-time.</p>
+</div>
+</div>
+</section>
+<!-- Portal Preview -->
+<section class="py-section-gap px-container-padding bg-surface-container-low border-y border-outline-variant/30 overflow-hidden relative">
+<div class="max-w-max-width mx-auto">
+<div class="flex flex-col lg:flex-row items-center gap-12">
+<div class="lg:w-1/3 z-10">
+<h2 class="font-headline-lg text-headline-lg text-white mb-6">Unrivaled Interface Quality</h2>
+<p class="font-body-md text-body-md text-on-surface-variant mb-8">Experience a dashboard engineered for clarity and speed. The dark, minimalist aesthetic reduces eye strain during high-volume booking sessions, while intelligent layouts put critical data exactly where you need it.</p>
+<ul class="space-y-4">
+<li class="flex items-center gap-3">
+<span class="material-symbols-outlined text-primary-container text-[20px]">check_circle</span>
+<span class="font-body-md text-body-md text-on-surface">Real-time status indicators</span>
+</li>
+<li class="flex items-center gap-3">
+<span class="material-symbols-outlined text-primary-container text-[20px]">check_circle</span>
+<span class="font-body-md text-body-md text-on-surface">Fluid grid data presentation</span>
+</li>
+<li class="flex items-center gap-3">
+<span class="material-symbols-outlined text-primary-container text-[20px]">check_circle</span>
+<span class="font-body-md text-body-md text-on-surface">Distraction-free focus modes</span>
+</li>
+</ul>
+</div>
+<div class="lg:w-2/3 relative">
+<div class="absolute inset-0 bg-gradient-to-r from-surface-container-low to-transparent z-10 w-32"></div>
+<div class="absolute inset-0 bg-gradient-to-t from-surface-container-low to-transparent z-10 h-32 top-auto bottom-0"></div>
+<img class="w-full h-auto rounded-xl shadow-2xl border border-white/5 opacity-80 mix-blend-screen" data-alt="A highly stylized, blurred conceptual mockup of a dark-mode B2B travel agency dashboard interface. It features glassmorphic panels, glowing red status indicators, and crisp white typography on a deep obsidian background. Professional, high-tech, and luxurious." src="https://lh3.googleusercontent.com/aida-public/AB6AXuAEuBnJcE8s224ViDhuZ-sPIy1t3ACAdQFimr6DxwX0YC-ZsEy13T_2PkHhsukPdCP3zXMuvhgtIrtdkl69IsLTcgjLQk643fP3xL2rZc5s66RTQBCIAMtDIsDNWV5TYjx51i2_WRyXJlBlh8fRBgFd7a0wZD2kVp1lOuBc9r7LyhLetRFlQ64jv1ygwIlRbUyCfFOuVFkTofSfY08NLEokNQzXAwSw1TiQ1nX0Ju4JjmOZuZdodFXw" style="filter: blur(2px);"/>
+</div>
+</div>
+</div>
+</section>
+<!-- CTA Section -->
+<section class="py-section-gap px-container-padding max-w-4xl mx-auto">
+<div class="glass-card rounded-2xl p-12 text-center border-primary-container/30 relative overflow-hidden">
+<div class="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-primary-container to-transparent"></div>
+<h2 class="font-display-lg text-display-lg text-white mb-6">Ready to Elevate Your Agency?</h2>
+<p class="font-body-lg text-body-lg text-on-surface-variant mb-10 max-w-xl mx-auto">Join a network of elite travel professionals utilizing AeroElite to redefine operational efficiency and client satisfaction.</p>
+<button class="bg-primary-container text-white px-10 py-4 rounded font-label-md text-label-md crimson-glow crimson-glow-hover transition-all duration-300">Get Started Now</button>
+</div>
+</section>
+</main>
+<!-- Footer -->
+<footer class="bg-surface-container-lowest dark:bg-surface-container-lowest w-full py-section-gap border-t border-outline-variant mt-auto">
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-gutter px-container-padding max-w-max-width mx-auto">
+<div class="col-span-1 md:col-span-2 lg:col-span-1">
+<div class="font-headline-md text-headline-md text-primary mb-4">AeroElite</div>
+<p class="font-body-md text-body-md text-on-surface-variant">© 2024 AeroElite Global. All rights reserved. Precision travel management for the modern agent.</p>
+</div>
+<div class="flex flex-col gap-3">
+<a class="font-body-md text-body-md text-on-surface-variant hover:text-primary transition-colors" href="#">Privacy Policy</a>
+<a class="font-body-md text-body-md text-on-surface-variant hover:text-primary transition-colors" href="#">Terms of Service</a>
+</div>
+<div class="flex flex-col gap-3">
+<a class="font-body-md text-body-md text-on-surface-variant hover:text-primary transition-colors" href="#">API Documentation</a>
+<a class="font-body-md text-body-md text-on-surface-variant hover:text-primary transition-colors" href="#">Support</a>
+</div>
+<div class="flex flex-col gap-3">
+<a class="font-body-md text-body-md text-on-surface-variant hover:text-primary transition-colors" href="#">Carrier Partners</a>
+</div>
+</div>
+</footer>
+</body></html>

@@ -1,820 +1,330 @@
-'use client';
-import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
-import { Api, BookingStore, formatPrice, formatDate, formatTime } from '@/utils/api';
-import { useAuth } from '@/context/AuthContext';
+import React from 'react';
+import Link from 'next/link';
 
-export default function BookingPage() {
-  const router = useRouter();
-  const { isLoggedIn, passenger } = useAuth();
-  
-  // Page load checks
-  const [bookingData, setBookingData] = useState({});
-  const [loading, setLoading] = useState(true);
-  
-  // Steps state
-  const [step, setStep] = useState(1);
-  
-  // Selected seats state
-  const [outboundSeats, setOutboundSeats] = useState([]);
-  const [returnSeats, setReturnSeats] = useState([]);
-  
-  // Seat map loaded data from backend
-  const [loadedOutboundSeats, setLoadedOutboundSeats] = useState([]);
-  const [loadedReturnSeats, setLoadedReturnSeats] = useState([]);
-  
-  // Interactive seat filter values
-  const [outboundFilter, setOutboundFilter] = useState('all');
-  const [returnFilter, setReturnFilter] = useState('all');
-  
-  // Interactive seat availability checkboxes
-  const [outboundShowAvailable, setOutboundShowAvailable] = useState(true);
-  const [outboundShowBooked, setOutboundShowBooked] = useState(true);
-  const [returnShowAvailable, setReturnShowAvailable] = useState(true);
-  const [returnShowBooked, setReturnShowBooked] = useState(true);
-  
-  // Passenger details fields
-  const [passengerDetails, setPassengerDetails] = useState([]);
-  
-  // Payment Details
-  const [paymentMethod, setPaymentMethod] = useState('Credit Card');
-  const [cardNumber, setCardNumber] = useState('');
-  const [expiryDate, setExpiryDate] = useState('');
-  const [cvv, setCvv] = useState('');
-  const [cardName, setCardName] = useState('');
-  const [confirmLoading, setConfirmLoading] = useState(false);
 
-  // Load state and redirect if empty
-  useEffect(() => {
-    const token = localStorage.getItem('sb_token');
-    if (!token) {
-      window.showToast?.('Please sign in to continue booking', 'info');
-      router.push(`/login?redirect=${encodeURIComponent('/booking')}`);
-      return;
-    }
+const LogoIcon = ({ className = "w-8 h-8" }) => (
+  <svg 
+    className={`text-red-600 transform -rotate-45 transition-transform duration-500 ${className}`} 
+    viewBox="0 0 24 24" 
+    fill="none" 
+    xmlns="http://www.w3.org/2000/svg"
+  >
+    <path 
+      d="M21 16V14L13 9V3.5C13 2.67 12.33 2 11.5 2C10.67 2 10 2.67 10 3.5V9L2 14V16L10 13.5V19L8 20.5V22L11.5 21L15 22V20.5L13 19V13.5L21 16Z" 
+      fill="currentColor"
+    />
+  </svg>
+);
 
-    const data = BookingStore.get();
-    if (!data.outbound_flight) {
-      window.showToast?.('No flight selected. Redirecting to search...', 'warning');
-      router.push('/search');
-      return;
-    }
-
-    setBookingData(data);
-    
-    // Initialize empty passenger profiles
-    const count = data.passengers || 1;
-    const initialPaxs = [];
-    const leadPax = passenger || JSON.parse(localStorage.getItem('sb_passenger')) || null;
-    
-    for (let i = 0; i < count; i++) {
-      initialPaxs.push({
-        first_name: i === 0 && leadPax ? leadPax.first_name : '',
-        last_name: i === 0 && leadPax ? leadPax.last_name : '',
-        passport: i === 0 && leadPax ? (leadPax.passport_no || '') : '',
-        dob: '',
-      });
-    }
-    setPassengerDetails(initialPaxs);
-
-    const cabin = data.cabin_class || 'Economy';
-    
-    // Outbound seats
-    Api.get(`/flights/${data.outbound_flight.flight_id}/seats`)
-      .then(res => {
-        setLoadedOutboundSeats(res.seats[cabin] || []);
-      })
-      .catch(err => {
-        window.showToast?.(`Outbound seats error: ${err.message}`, 'error');
-      });
-
-    // Return seats
-    if (data.trip_type === 'round-trip' && data.return_flight) {
-      Api.get(`/flights/${data.return_flight.flight_id}/seats`)
-        .then(res => {
-          setLoadedReturnSeats(res.seats[cabin] || []);
-        })
-        .catch(err => {
-          window.showToast?.(`Return seats error: ${err.message}`, 'error');
-        });
-    }
-    
-    setLoading(false);
-  }, [passenger]);
-
-  // Seat Grouping by row utility
-  function groupSeatsByRow(seatsList) {
-    const rows = {};
-    seatsList.forEach(s => {
-      const row = s.seat_number.replace(/[A-Z]/g, '');
-      if (!rows[row]) rows[row] = [];
-      rows[row].push(s);
-    });
-    return rows;
-  }
-
-  // Toggle seat choice helper
-  function toggleSeat(seat, leg) {
-    if (seat.is_booked) return;
-    
-    const needed = bookingData.passengers || 1;
-    const isOutbound = leg === 'outbound';
-    const selectedArr = isOutbound ? outboundSeats : returnSeats;
-    const setArr = isOutbound ? setOutboundSeats : setReturnSeats;
-
-    const idx = selectedArr.findIndex(s => s.seat_id === seat.seat_id);
-    if (idx > -1) {
-      setArr(selectedArr.filter(s => s.seat_id !== seat.seat_id));
-    } else {
-      if (selectedArr.length >= needed) {
-        window.showToast?.(`You can only select ${needed} seat${needed > 1 ? 's' : ''} for this leg`, 'warning');
-        return;
-      }
-      setArr([...selectedArr, { seat_id: seat.seat_id, seat_number: seat.seat_number, price: seat.price }]);
-    }
-  }
-
-  // Card formatting utility
-  function formatCardInput(val) {
-    let raw = val.replace(/\D/g, '').substring(0, 16);
-    let parts = raw.match(/.{1,4}/g);
-    return parts ? parts.join(' ') : raw;
-  }
-
-  // Filter Seat Map display items
-  function getSeatVisibility(seat, leg) {
-    const isBooked = !!seat.is_booked;
-    const showAvailable = leg === 'outbound' ? outboundShowAvailable : returnShowAvailable;
-    const showBooked = leg === 'outbound' ? outboundShowBooked : returnShowBooked;
-
-    if (isBooked && !showBooked) return 'hidden';
-    if (!isBooked && !showAvailable) return 'hidden';
-
-    const activeFilter = leg === 'outbound' ? outboundFilter : returnFilter;
-    if (activeFilter === 'extra-legroom') {
-      return seat.has_extra_legroom ? 'visible' : 'dimmed';
-    } else if (activeFilter !== 'all') {
-      return seat.seat_type === activeFilter ? 'visible' : 'dimmed';
-    }
-    
-    return 'visible';
-  }
-
-  // Navigation validation
-  function handleGoToPassengers() {
-    const needed = bookingData.passengers || 1;
-    if (outboundSeats.length < needed) {
-      window.showToast?.(`Please select ${needed} seat${needed > 1 ? 's' : ''} for the outbound flight`, 'warning');
-      return;
-    }
-    if (bookingData.trip_type === 'round-trip' && returnSeats.length < needed) {
-      window.showToast?.(`Please select ${needed} seat${needed > 1 ? 's' : ''} for the return flight`, 'warning');
-      return;
-    }
-    setStep(2);
-  }
-
-  function handleGoToPayment() {
-    for (let i = 0; i < passengerDetails.length; i++) {
-      if (!passengerDetails[i].first_name.trim() || !passengerDetails[i].last_name.trim()) {
-        window.showToast?.(`Please enter First and Last name for Passenger ${i + 1}`, 'warning');
-        return;
-      }
-    }
-    setStep(3);
-  }
-
-  async function handleConfirmBooking() {
-    const isCard = paymentMethod === 'Credit Card' || paymentMethod === 'Debit Card';
-    let card4 = null;
-    if (isCard) {
-      const cleaned = cardNumber.replace(/\s/g, '');
-      if (cleaned.length < 16) {
-        window.showToast?.('Please enter a valid 16-digit card number', 'warning');
-        return;
-      }
-      card4 = cleaned.slice(-4);
-    }
-
-    setConfirmLoading(true);
-    const outTotal = outboundSeats.reduce((sum, s) => sum + s.price, 0);
-    const retTotal = returnSeats.reduce((sum, s) => sum + s.price, 0);
-
-    const payload = {
-      trip_type: bookingData.trip_type || 'one-way',
-      outbound_flight_id: bookingData.outbound_flight.flight_id,
-      return_flight_id: bookingData.return_flight?.flight_id || null,
-      outbound_seat_ids: outboundSeats.map(s => s.seat_id),
-      return_seat_ids: returnSeats.map(s => s.seat_id),
-      passengers: passengerDetails.map(p => ({
-        first_name: p.first_name.trim(),
-        last_name: p.last_name.trim(),
-        passport: p.passport.trim() || '',
-        dob: p.dob || null,
-      })),
-      payment_method: paymentMethod,
-      card_last_four: card4,
-      total_amount: outTotal + retTotal,
-    };
-
-    try {
-      const res = await Api.post('/bookings/', payload, true);
-      window.showToast?.('Booking confirmed! 🎉', 'success');
-      sessionStorage.setItem('last_booking', JSON.stringify(res));
-      BookingStore.clear();
-      router.push('/confirmation');
-    } catch (err) {
-      window.showToast?.(err.message, 'error');
-    } finally {
-      setConfirmLoading(false);
-    }
-  }
-
-  if (loading) {
-    return (
-      <div className="page-wrapper flex-center bg-brand-black min-h-screen">
-        <div className="spinner" />
-      </div>
-    );
-  }
-
-  const neededPax = bookingData.passengers || 1;
-  const obFlight = bookingData.outbound_flight;
-  const rtFlight = bookingData.return_flight;
-  const cabin = bookingData.cabin_class || 'Economy';
-
-  const outTotal = outboundSeats.reduce((sum, s) => sum + s.price, 0);
-  const retTotal = returnSeats.reduce((sum, s) => sum + s.price, 0);
-  const grandTotal = outTotal + retTotal;
-
-  const aisleAfter = cabin === 'Economy' ? 3 : 2;
-
+export default function PassengerDetailsBookingCheckoutPage() {
   return (
-    <div className="bg-brand-black text-brand-white min-h-screen font-body pt-20">
-      
-      {/* ── Steps Indicator Header ── */}
-      <div className="py-8 bg-brand-charcoal/50 border-b border-brand-gray-dark/40">
-        <div className="container-wide mx-auto px-6">
-          <h1 className="text-2xl md:text-3xl font-black font-heading mb-6">
-            Complete Your <span className="gradient-text">Booking</span>
-          </h1>
-          
-          <div className="flex items-center justify-between max-w-xl mx-auto">
-            <div className="flex flex-col items-center gap-2">
-              <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-xs transition-colors duration-300 ${
-                step === 1 ? 'bg-brand-red text-brand-white' : step > 1 ? 'bg-green-500 text-brand-white' : 'bg-brand-gray-dark text-brand-gray-light'
-              }`}>
-                {step > 1 ? '✓' : '1'}
-              </div>
-              <span className="text-[10px] font-bold uppercase tracking-wider text-brand-gray-light">Seats</span>
-            </div>
-            <div className={`flex-1 h-0.5 mx-4 transition-colors duration-300 ${step > 1 ? 'bg-green-500' : 'bg-brand-gray-dark'}`} />
-            
-            <div className="flex flex-col items-center gap-2">
-              <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-xs transition-colors duration-300 ${
-                step === 2 ? 'bg-brand-red text-brand-white' : step > 2 ? 'bg-green-500 text-brand-white' : 'bg-brand-gray-dark text-brand-gray-light'
-              }`}>
-                {step > 2 ? '✓' : '2'}
-              </div>
-              <span className="text-[10px] font-bold uppercase tracking-wider text-brand-gray-light">Passengers</span>
-            </div>
-            <div className={`flex-1 h-0.5 mx-4 transition-colors duration-300 ${step > 2 ? 'bg-green-500' : 'bg-brand-gray-dark'}`} />
-            
-            <div className="flex flex-col items-center gap-2">
-              <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-xs transition-colors duration-300 ${
-                step === 3 ? 'bg-brand-red text-brand-white' : 'bg-brand-gray-dark text-brand-gray-light'
-              }`}>
-                3
-              </div>
-              <span className="text-[10px] font-bold uppercase tracking-wider text-brand-gray-light">Payment</span>
-            </div>
-          </div>
-        </div>
-      </div>
+    <>
+      {/* Material Symbols */}
+      <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet" />
+       Ambient Background Glow <div className="fixed inset-0 pointer-events-none z-0">
+<div className="absolute top-[-20%] left-[-10%] w-[50%] h-[50%] rounded-full bg-primary-container/5 blur-[120px]"></div>
+<div className="absolute bottom-[-10%] right-[-5%] w-[40%] h-[40%] rounded-full bg-primary-container/5 blur-[100px]"></div>
+</div> SideNavBar <nav className="bg-surface/10 backdrop-blur-xl border-r border-outline-variant shadow-2xl w-[280px] h-screen fixed left-0 top-0 z-50 flex flex-col h-full py-base">
 
-      <div className="container-wide mx-auto px-6 py-12">
-        <div className="grid lg:grid-cols-12 gap-8 items-start">
-          
-          {/* Left Flow Column */}
-          <div className="lg:col-span-8 space-y-6">
-            
-            {/* Flight info banner card */}
-            <div className="p-6 bg-brand-charcoal/80 border border-brand-gray-dark/40 rounded-xl shadow-xl">
-              <div className="grid md:grid-cols-2 gap-6 items-center">
-                <div className="space-y-1">
-                  <div className="text-[10px] font-bold text-brand-red-light uppercase tracking-wider">OUTBOUND</div>
-                  <div className="text-base font-extrabold">{obFlight?.flight_number} · {obFlight?.airline_name}</div>
-                  <div className="flex items-center gap-2 mt-1">
-                    <span className="text-lg font-black font-heading text-brand-white">{obFlight?.origin_iata}</span>
-                    <span className="text-brand-red">→</span>
-                    <span className="text-lg font-black font-heading text-brand-white">{obFlight?.dest_iata}</span>
-                  </div>
-                  <div className="text-xs text-brand-gray-light">
-                    {formatDate(obFlight?.departure_time)} · {formatTime(obFlight?.departure_time)}
-                  </div>
-                </div>
+<div className="px-6 py-6 border-b border-outline-variant/30 mb-4">
+<div className="flex items-center gap-3 mb-2">
+<div className="w-8 h-8 rounded bg-primary-container flex items-center justify-center">
+<span className="material-symbols-outlined text-white" style={{ fontVariationSettings: "'FILL' 1" }}>flight</span>
+</div>
+<h1 className="font-headline-md text-headline-md font-bold text-primary">SkyLink Premium</h1>
+</div>
+<p className="font-label-md text-label-md text-on-surface-variant">Elite Agent Portal</p>
+</div>
 
-                {rtFlight && (
-                  <div className="space-y-1 pt-6 md:pt-0 md:pl-6 border-t md:border-t-0 md:border-l border-brand-gray-dark/40">
-                    <div className="text-[10px] font-bold text-brand-red-light uppercase tracking-wider">RETURN</div>
-                    <div className="text-base font-extrabold">{rtFlight.flight_number} · {rtFlight.airline_name}</div>
-                    <div className="flex items-center gap-2 mt-1">
-                      <span className="text-lg font-black font-heading text-brand-white">{rtFlight.origin_iata}</span>
-                      <span className="text-brand-red">→</span>
-                      <span className="text-lg font-black font-heading text-brand-white">{rtFlight.dest_iata}</span>
-                    </div>
-                    <div className="text-xs text-brand-gray-light">
-                      {formatDate(rtFlight.departure_time)} · {formatTime(rtFlight.departure_time)}
-                    </div>
-                  </div>
-                )}
-              </div>
-            </div>
+<div className="px-6 mb-6">
+<Link href="/search"  className="w-full bg-primary-container text-white font-label-md text-label-md py-3 rounded-lg shadow-[0_0_15px_rgba(220,38,38,0.2)] hover:bg-inverse-primary transition-all flex justify-center items-center gap-2">
+<span className="material-symbols-outlined">add</span>
+                New Booking
+            </Link>
+</div>
 
-            {/* Step 1: Seat map picker */}
-            {step === 1 && (
-              <div className="space-y-6 animate-fade-in-up">
-                
-                {/* Outbound leg map */}
-                <div className="p-6 bg-brand-charcoal border border-brand-gray-dark/40 rounded-xl space-y-4">
-                  <div className="flex justify-between items-center">
-                    <h3 className="text-lg font-bold font-heading">💺 Select Outbound Seats</h3>
-                    <div className="text-xs text-brand-gray-light">
-                      Selected Outbound:{' '}
-                      <span className="text-brand-red-light font-bold">
-                        {outboundSeats.length > 0 ? outboundSeats.map(s => s.seat_number).join(', ') : 'None'}
-                      </span>
-                    </div>
-                  </div>
+<ul className="flex-1 px-4 space-y-1">
+<li>
+<Link href="/dashboard"  className="flex items-center gap-3 px-4 py-3 rounded-lg text-on-surface-variant font-medium hover:bg-surface-variant/20 hover:text-primary transition-colors scale-95 duration-150 ease-in-out" >
+<span className="material-symbols-outlined">dashboard</span>
+<span className="font-body-md text-body-md">Dashboard</span>
+</Link>
+</li>
+<li>
+<Link href="/search"  className="flex items-center gap-3 px-4 py-3 rounded-lg text-primary font-bold border-r-2 border-primary bg-primary-container/10 hover:bg-surface-variant/20 hover:text-primary transition-colors scale-95 duration-150 ease-in-out" >
+<span className="material-symbols-outlined" style={{ fontVariationSettings: "'FILL' 1" }}>flight_takeoff</span>
+<span className="font-body-md text-body-md">Search Flights</span>
+</Link>
+</li>
+<li>
+<Link href="/manage-bookings" className="flex items-center gap-3 px-4 py-3 rounded-lg text-on-surface-variant font-medium hover:bg-surface-variant/20 hover:text-primary transition-colors scale-95 duration-150 ease-in-out">
+<span className="material-symbols-outlined">edit_calendar</span>
+<span className="font-body-md text-body-md">Manage Bookings</span>
+</Link>
+</li>
+<li>
+<Link href="/agent/dashboard" className="flex items-center gap-3 px-4 py-3 rounded-lg text-on-surface-variant font-medium hover:bg-surface-variant/20 hover:text-primary transition-colors scale-95 duration-150 ease-in-out">
+<span className="material-symbols-outlined">handyman</span>
+<span className="font-body-md text-body-md">Agent Tools</span>
+</Link>
+</li>
+<li>
+<Link href="/agent/dashboard" className="flex items-center gap-3 px-4 py-3 rounded-lg text-on-surface-variant font-medium hover:bg-surface-variant/20 hover:text-primary transition-colors scale-95 duration-150 ease-in-out">
+<span className="material-symbols-outlined">assessment</span>
+<span className="font-body-md text-body-md">Reports</span>
+</Link>
+</li>
+</ul>
 
-                  {/* Seat category checkboxes */}
-                  <div className="flex flex-wrap gap-4 text-xs">
-                    <label className="flex items-center gap-2 cursor-pointer font-semibold text-brand-gray-light hover:text-brand-white transition-colors">
-                      <input type="checkbox" className="w-4 h-4 bg-brand-black border border-brand-gray-dark rounded focus:ring-0 focus:ring-offset-0 text-brand-red" checked={outboundShowAvailable} onChange={e => setOutboundShowAvailable(e.target.checked)} />
-                      Available
-                    </label>
-                    <label className="flex items-center gap-2 cursor-pointer font-semibold text-brand-gray-light hover:text-brand-white transition-colors">
-                      <input type="checkbox" className="w-4 h-4 bg-brand-red rounded border border-brand-red" checked={true} disabled />
-                      Selected
-                    </label>
-                    <label className="flex items-center gap-2 cursor-pointer font-semibold text-brand-gray-light hover:text-brand-white transition-colors">
-                      <input type="checkbox" className="w-4 h-4 bg-brand-black border border-brand-gray-dark rounded focus:ring-0 focus:ring-offset-0 text-brand-red" checked={outboundShowBooked} onChange={e => setOutboundShowBooked(e.target.checked)} />
-                      Booked
-                    </label>
-                  </div>
+<div className="px-4 border-t border-outline-variant/30 pt-4 mt-auto">
+<ul className="space-y-1">
+<li>
+<Link href="/settings" className="flex items-center gap-3 px-4 py-3 rounded-lg text-on-surface-variant font-medium hover:bg-surface-variant/20 hover:text-primary transition-colors scale-95 duration-150 ease-in-out">
+<span className="material-symbols-outlined">settings</span>
+<span className="font-body-md text-body-md">Settings</span>
+</Link>
+</li>
+<li>
+<Link href="#" className="flex items-center gap-3 px-4 py-3 rounded-lg text-on-surface-variant font-medium hover:bg-surface-variant/20 hover:text-primary transition-colors scale-95 duration-150 ease-in-out">
+<span className="material-symbols-outlined">contact_support</span>
+<span className="font-body-md text-body-md">Support</span>
+</Link>
+</li>
+</ul>
+</div>
+</nav> TopNavBar <header className="bg-surface/30 backdrop-blur-md border-b border-outline-variant h-16 fixed top-0 right-0 left-[280px] z-40 flex justify-between items-center px-container-padding">
 
-                  {/* Seat type filter tabs */}
-                  <div className="flex flex-wrap gap-1.5 items-center">
-                    <span className="text-[10px] text-brand-gray-light font-bold uppercase tracking-wider mr-2">Filter:</span>
-                    {['all', 'Window', 'Aisle', 'Middle', 'extra-legroom'].map(f => (
-                      <button
-                        key={`out-filter-${f}`}
-                        type="button"
-                        className={`px-3 py-1 text-[10px] font-semibold rounded transition-colors ${
-                          outboundFilter === f
-                            ? 'bg-brand-red text-brand-white'
-                            : 'text-brand-gray-light border border-brand-gray-dark/50 hover:bg-brand-card hover:text-brand-white'
-                        }`}
-                        onClick={() => setOutboundFilter(f)}
-                      >
-                        {f === 'extra-legroom' ? '🌟 Extra Legroom' : f === 'all' ? 'All Seats' : f}
-                      </button>
-                    ))}
-                  </div>
+<div className="flex items-center gap-4">
+<span className="font-headline-md text-headline-md font-black tracking-tighter text-primary">SkyLink B2B</span>
+</div>
 
-                  {/* Outbound Grid list */}
-                  <div className="pt-4 overflow-x-auto">
-                    <div className="inline-block min-w-[340px] space-y-1.5">
-                      {Object.keys(groupSeatsByRow(loadedOutboundSeats))
-                        .sort((a, b) => parseInt(a) - parseInt(b))
-                        .map(row => {
-                          const rowSeats = groupSeatsByRow(loadedOutboundSeats)[row].sort((a, b) => a.seat_number.localeCompare(b.seat_number));
-                          return (
-                            <div key={`out-row-${row}`} className="flex items-center gap-2 justify-center">
-                              <div className="w-6 text-[10px] text-brand-gray-muted text-right pr-2 font-bold">{row}</div>
-                              {rowSeats.map((seat, i) => {
-                                const isSelected = outboundSeats.some(s => s.seat_id === seat.seat_id);
-                                const visibility = getSeatVisibility(seat, 'outbound');
-                                
-                                if (visibility === 'hidden') return <div key={seat.seat_id} className="w-9 h-9" />;
-                                
-                                return (
-                                  <div key={seat.seat_id} className="flex">
-                                    {i === aisleAfter && <div className="w-6" />}
-                                    <div
-                                      className={`w-9 h-9 flex items-center justify-center text-[10px] font-extrabold rounded-t-md border-b-2 cursor-pointer transition-all duration-200 select-none ${
-                                        seat.is_booked 
-                                          ? 'bg-brand-gray-dark/30 border-brand-gray-dark text-brand-gray-muted cursor-not-allowed'
-                                          : isSelected
-                                          ? 'bg-brand-red border-brand-red-dark text-brand-white scale-105 shadow-md shadow-brand-red/35'
-                                          : visibility === 'dimmed'
-                                          ? 'opacity-20 pointer-events-none'
-                                          : seat.has_extra_legroom
-                                          ? 'bg-orange-500/20 border-orange-500 text-orange-400 hover:bg-orange-500/30'
-                                          : 'bg-brand-charcoal border-brand-gray-dark text-brand-gray-light hover:text-brand-white hover:border-brand-gray-muted'
-                                      }`}
-                                      title={`${seat.seat_number} · ${cabin} Class · ${formatPrice(seat.price)}`}
-                                      onClick={() => toggleSeat(seat, 'outbound')}
-                                    >
-                                      {seat.seat_number.replace(/^\d+/, '')}
-                                    </div>
-                                  </div>
-                                );
-                              })}
-                            </div>
-                          );
-                        })}
-                    </div>
-                  </div>
-                </div>
+<nav className="hidden lg:flex items-center gap-6">
+<Link href="#" className="font-label-md text-label-md text-on-surface-variant hover:text-primary transition-all active:opacity-80 transition-opacity"  style={{color: "#ffb4ab"}}>Global Availability</Link>
+<Link href="#" className="font-label-md text-label-md text-on-surface-variant hover:text-primary transition-all active:opacity-80 transition-opacity" >Fare Rules</Link>
+<Link href="#" className="font-label-md text-label-md text-on-surface-variant hover:text-primary transition-all active:opacity-80 transition-opacity" >Tax Tables</Link>
+</nav>
 
-                {/* Return leg map */}
-                {rtFlight && (
-                  <div className="p-6 bg-brand-charcoal border border-brand-gray-dark/40 rounded-xl space-y-4 animate-fade-in-up">
-                    <div className="flex justify-between items-center">
-                      <h3 className="text-lg font-bold font-heading">🔄 Select Return Seats</h3>
-                      <div className="text-xs text-brand-gray-light">
-                        Selected Return:{' '}
-                        <span className="text-brand-red-light font-bold">
-                          {returnSeats.length > 0 ? returnSeats.map(s => s.seat_number).join(', ') : 'None'}
-                        </span>
-                      </div>
-                    </div>
+<div className="flex items-center gap-6">
+<span className="font-mono-data text-mono-data text-on-surface-variant">Currency: USD</span>
+<div className="flex items-center gap-4 border-l border-outline-variant/50 pl-6">
+<button className="text-on-surface-variant hover:text-primary transition-colors">
+<span className="material-symbols-outlined">notifications</span>
+</button>
+<button className="text-on-surface-variant hover:text-primary transition-colors">
+<span className="material-symbols-outlined">help_outline</span>
+</button>
+<div className="flex items-center gap-2 cursor-pointer group">
+<div className="w-8 h-8 rounded-full bg-surface-container overflow-hidden border border-outline-variant group-hover:border-primary transition-colors">
+<img className="w-full h-full object-cover" data-alt="A professional headshot of a travel agent in their 30s, looking confidently at the camera. The lighting is studio quality, emphasizing a polished corporate aesthetic against a dark minimalist background." src="/agent_avatar.png"/>
+</div>
+<span className="font-label-md text-label-md text-on-surface-variant group-hover:text-primary transition-colors">Agent Profile</span>
+<span className="material-symbols-outlined text-on-surface-variant text-sm">expand_more</span>
+</div>
+</div>
+</div>
+</header> Main Content Layout <main className="ml-[280px] mt-16 p-container-padding relative z-10 max-w-[1440px] mx-auto">
 
-                    <div className="flex flex-wrap gap-4 text-xs">
-                      <label className="flex items-center gap-2 cursor-pointer font-semibold text-brand-gray-light hover:text-brand-white transition-colors">
-                        <input type="checkbox" className="w-4 h-4 bg-brand-black border border-brand-gray-dark rounded focus:ring-0 text-brand-red" checked={returnShowAvailable} onChange={e => setReturnShowAvailable(e.target.checked)} />
-                        Available
-                      </label>
-                      <label className="flex items-center gap-2 cursor-pointer font-semibold text-brand-gray-light hover:text-brand-white transition-colors">
-                        <input type="checkbox" className="w-4 h-4 bg-brand-red rounded border border-brand-red" checked={true} disabled />
-                        Selected
-                      </label>
-                      <label className="flex items-center gap-2 cursor-pointer font-semibold text-brand-gray-light hover:text-brand-white transition-colors">
-                        <input type="checkbox" className="w-4 h-4 bg-brand-black border border-brand-gray-dark rounded focus:ring-0 text-brand-red" checked={returnShowBooked} onChange={e => setReturnShowBooked(e.target.checked)} />
-                        Booked
-                      </label>
-                    </div>
+<div className="mb-8 flex items-center gap-2 text-on-surface-variant font-label-md text-label-md">
+<span>Search</span>
+<span className="material-symbols-outlined text-sm">chevron_right</span>
+<span>Select Flight</span>
+<span className="material-symbols-outlined text-sm">chevron_right</span>
+<span className="text-primary-container">Passenger &amp; Checkout</span>
+</div>
+<div className="grid grid-cols-1 xl:grid-cols-12 gap-8">
 
-                    <div className="flex flex-wrap gap-1.5 items-center">
-                      <span className="text-[10px] text-brand-gray-light font-bold uppercase tracking-wider mr-2">Filter:</span>
-                      {['all', 'Window', 'Aisle', 'Middle', 'extra-legroom'].map(f => (
-                        <button
-                          key={`ret-filter-${f}`}
-                          type="button"
-                          className={`px-3 py-1 text-[10px] font-semibold rounded transition-colors ${
-                            returnFilter === f
-                              ? 'bg-brand-red text-brand-white'
-                              : 'text-brand-gray-light border border-brand-gray-dark/50 hover:bg-brand-card hover:text-brand-white'
-                          }`}
-                          onClick={() => setReturnFilter(f)}
-                        >
-                          {f === 'extra-legroom' ? '🌟 Extra Legroom' : f === 'all' ? 'All Seats' : f}
-                        </button>
-                      ))}
-                    </div>
+<div className="xl:col-span-8 space-y-8">
 
-                    {/* Return Grid list */}
-                    <div className="pt-4 overflow-x-auto">
-                      <div className="inline-block min-w-[340px] space-y-1.5">
-                        {Object.keys(groupSeatsByRow(loadedReturnSeats))
-                          .sort((a, b) => parseInt(a) - parseInt(b))
-                          .map(row => {
-                            const rowSeats = groupSeatsByRow(loadedReturnSeats)[row].sort((a, b) => a.seat_number.localeCompare(b.seat_number));
-                            return (
-                              <div key={`ret-row-${row}`} className="flex items-center gap-2 justify-center">
-                                <div className="w-6 text-[10px] text-brand-gray-muted text-right pr-2 font-bold">{row}</div>
-                                {rowSeats.map((seat, i) => {
-                                  const isSelected = returnSeats.some(s => s.seat_id === seat.seat_id);
-                                  const visibility = getSeatVisibility(seat, 'return');
-                                  
-                                  if (visibility === 'hidden') return <div key={seat.seat_id} className="w-9 h-9" />;
-                                  
-                                  return (
-                                    <div key={seat.seat_id} className="flex">
-                                      {i === aisleAfter && <div className="w-6" />}
-                                      <div
-                                        className={`w-9 h-9 flex items-center justify-center text-[10px] font-extrabold rounded-t-md border-b-2 cursor-pointer transition-all duration-200 select-none ${
-                                          seat.is_booked 
-                                            ? 'bg-brand-gray-dark/30 border-brand-gray-dark text-brand-gray-muted cursor-not-allowed'
-                                            : isSelected
-                                            ? 'bg-brand-red border-brand-red-dark text-brand-white scale-105 shadow-md shadow-brand-red/35'
-                                            : visibility === 'dimmed'
-                                            ? 'opacity-20 pointer-events-none'
-                                            : seat.has_extra_legroom
-                                            ? 'bg-orange-500/20 border-orange-500 text-orange-400 hover:bg-orange-500/30'
-                                            : 'bg-brand-charcoal border-brand-gray-dark text-brand-gray-light hover:text-brand-white hover:border-brand-gray-muted'
-                                        }`}
-                                        title={`${seat.seat_number} · ${cabin} Class · ${formatPrice(seat.price)}`}
-                                        onClick={() => toggleSeat(seat, 'return')}
-                                      >
-                                        {seat.seat_number.replace(/^\d+/, '')}
-                                      </div>
-                                    </div>
-                                  );
-                                })}
-                              </div>
-                            );
-                          })}
-                      </div>
-                    </div>
-                  </div>
-                )}
+<section>
+<h2 className="font-headline-md text-headline-md text-primary-container mb-4 flex items-center gap-3">
+<span className="font-mono-data text-mono-data text-outline tracking-widest opacity-50">01</span>
+                        PASSENGER INFORMATION
+                    </h2>
+<div className="glass-panel rounded-xl p-6">
+<div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+<div className="space-y-2">
+<label className="font-label-md text-label-md text-on-surface-variant">First Name (as on Passport)</label>
+<input className="w-full form-input rounded-lg px-4 py-3 font-body-md text-body-md" placeholder="Enter first name" type="text"/>
+</div>
+<div className="space-y-2">
+<label className="font-label-md text-label-md text-on-surface-variant">Last Name (as on Passport)</label>
+<input className="w-full form-input rounded-lg px-4 py-3 font-body-md text-body-md" placeholder="Enter last name" type="text"/>
+</div>
+<div className="space-y-2">
+<label className="font-label-md text-label-md text-on-surface-variant">Date of Birth</label>
+<input className="w-full form-input rounded-lg px-4 py-3 font-body-md text-body-md text-on-surface-variant" type="date"/>
+</div>
+<div className="space-y-2">
+<label className="font-label-md text-label-md text-on-surface-variant">Gender</label>
+<select className="w-full form-input rounded-lg px-4 py-3 font-body-md text-body-md text-on-surface-variant appearance-none">
+<option>Select gender</option>
+<option>Male</option>
+<option>Female</option>
+<option>Undisclosed</option>
+</select>
+</div>
+<div className="space-y-2">
+<label className="font-label-md text-label-md text-on-surface-variant">Passport Number</label>
+<input className="w-full form-input rounded-lg px-4 py-3 font-mono-data text-mono-data tracking-wider uppercase" placeholder="A12345678" type="text"/>
+</div>
+<div className="space-y-2">
+<label className="font-label-md text-label-md text-on-surface-variant">Passport Expiry</label>
+<input className="w-full form-input rounded-lg px-4 py-3 font-body-md text-body-md text-on-surface-variant" type="date"/>
+</div>
+</div>
+</div>
+</section>
 
-                <button className="px-6 py-3 bg-brand-red text-brand-white font-bold rounded uppercase tracking-wider text-xs hover:bg-brand-red-light transition-all shadow shadow-brand-red/35 transform hover:-translate-y-0.5 mt-4" onClick={handleGoToPassengers}>
-                  Continue to Passengers →
-                </button>
-              </div>
-            )}
+<section>
+<h2 className="font-headline-md text-headline-md text-primary-container mb-4 flex items-center gap-3">
+<span className="font-mono-data text-mono-data text-outline tracking-widest opacity-50">02</span>
+                        SEAT SELECTION
+                    </h2>
+<div className="glass-panel rounded-xl p-8 flex flex-col items-center">
 
-            {/* Step 2: Passenger form */}
-            {step === 2 && (
-              <div className="p-6 bg-brand-charcoal border border-brand-gray-dark/40 rounded-xl space-y-6 animate-fade-in-up">
-                <h3 className="text-lg font-bold font-heading">👥 Passenger Details</h3>
-                
-                <div className="space-y-6">
-                  {passengerDetails.map((p, idx) => (
-                    <div key={`pax-${idx}`} className="space-y-4 pb-6 border-b border-brand-gray-dark/30 last:border-b-0 last:pb-0">
-                      <h5 className="text-sm font-bold font-heading flex items-center gap-1.5">
-                        <span>👤 Passenger {idx + 1}</span>
-                        {idx === 0 && <span className="text-[10px] text-brand-red-light font-bold bg-brand-red/10 border border-brand-red/20 px-2 py-0.5 rounded">(Lead Passenger)</span>}
-                      </h5>
-                      
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div className="form-group mb-0">
-                          <label className="text-[10px] text-brand-gray-light font-bold tracking-wider">First Name *</label>
-                          <input
-                            type="text"
-                            placeholder="John"
-                            className="w-full px-3 py-2 bg-brand-black border border-brand-gray-dark/50 rounded text-brand-white outline-none focus:border-brand-red text-sm font-semibold transition-colors"
-                            value={p.first_name}
-                            onChange={e => {
-                              const copy = [...passengerDetails];
-                              copy[idx].first_name = e.target.value;
-                              setPassengerDetails(copy);
-                            }}
-                            required
-                          />
-                        </div>
+<div className="flex gap-6 mb-8 w-full justify-center border-b border-outline/10 pb-6">
+<div className="flex items-center gap-2">
+<div className="w-4 h-4 rounded-sm border border-outline/50 bg-surface/50"></div>
+<span className="font-label-md text-label-md text-on-surface-variant">Available</span>
+</div>
+<div className="flex items-center gap-2">
+<div className="w-4 h-4 rounded-sm bg-primary-container shadow-[0_0_8px_rgba(220,38,38,0.5)]"></div>
+<span className="font-label-md text-label-md text-on-surface">Selected</span>
+</div>
+<div className="flex items-center gap-2">
+<div className="w-4 h-4 rounded-sm bg-surface-container-high border border-outline-variant/50"></div>
+<span className="font-label-md text-label-md text-on-surface-variant/50">Occupied</span>
+</div>
+</div>
 
-                        <div className="form-group mb-0">
-                          <label className="text-[10px] text-brand-gray-light font-bold tracking-wider">Last Name *</label>
-                          <input
-                            type="text"
-                            placeholder="Doe"
-                            className="w-full px-3 py-2 bg-brand-black border border-brand-gray-dark/50 rounded text-brand-white outline-none focus:border-brand-red text-sm font-semibold transition-colors"
-                            value={p.last_name}
-                            onChange={e => {
-                              const copy = [...passengerDetails];
-                              copy[idx].last_name = e.target.value;
-                              setPassengerDetails(copy);
-                            }}
-                            required
-                          />
-                        </div>
+<div className="relative px-8 py-12 rounded-t-[100px] border border-outline/20 bg-gradient-to-b from-surface-container/20 to-transparent">
 
-                        <div className="form-group mb-0">
-                          <label className="text-[10px] text-brand-gray-light font-bold tracking-wider">Passport Number</label>
-                          <input
-                            type="text"
-                            placeholder="AB1234567"
-                            className="w-full px-3 py-2 bg-brand-black border border-brand-gray-dark/50 rounded text-brand-white outline-none focus:border-brand-red text-sm font-semibold transition-colors"
-                            value={p.passport}
-                            onChange={e => {
-                              const copy = [...passengerDetails];
-                              copy[idx].passport = e.target.value;
-                              setPassengerDetails(copy);
-                            }}
-                          />
-                        </div>
+<div className="absolute inset-0 rounded-t-[100px] border-2 border-outline-variant/10 pointer-events-none"></div>
 
-                        <div className="form-group mb-0">
-                          <label className="text-[10px] text-brand-gray-light font-bold tracking-wider">Date of Birth</label>
-                          <input
-                            type="date"
-                            className="w-full px-3 py-2 bg-brand-black border border-brand-gray-dark/50 rounded text-brand-white outline-none focus:border-brand-red text-xs transition-colors"
-                            value={p.dob}
-                            onChange={e => {
-                              const copy = [...passengerDetails];
-                              copy[idx].dob = e.target.value;
-                              setPassengerDetails(copy);
-                            }}
-                          />
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
+<div className="seat-map-grid">
 
-                <div className="flex gap-3 pt-4 border-t border-brand-gray-dark/30">
-                  <button className="px-4 py-2 border border-brand-gray-dark/50 text-brand-gray-light text-xs font-bold rounded uppercase tracking-wider hover:text-brand-white transition-colors" onClick={() => setStep(1)}>
-                    ← Back
-                  </button>
-                  <button className="px-6 py-2 bg-brand-red text-brand-white text-xs font-bold rounded uppercase tracking-wider hover:bg-brand-red-light transition-all shadow shadow-brand-red/35 transform hover:-translate-y-0.5" onClick={handleGoToPayment}>
-                    Continue to Payment →
-                  </button>
-                </div>
-              </div>
-            )}
+<div className="seat occupied">1A</div>
+<div className="seat occupied">1B</div>
+<div className="w-5"></div> 
+<div className="seat available">1C</div>
+<div className="seat available">1D</div>
 
-            {/* Step 3: Payment details mockup */}
-            {step === 3 && (
-              <div className="p-6 bg-brand-charcoal border border-brand-gray-dark/40 rounded-xl space-y-6 animate-fade-in-up">
-                <h3 className="text-lg font-bold font-heading">💳 Payment Details</h3>
-                <p className="text-xs text-brand-gray-light">This is a mock flight reservation payment flow. No actual cash will be charged.</p>
+<div className="seat available">2A</div>
+<div className="seat occupied">2B</div>
+<div></div>
+<div className="seat occupied">2C</div>
+<div className="seat occupied">2D</div>
 
-                {/* Summary ticket card */}
-                <div className="p-5 bg-brand-black/60 border border-brand-gray-dark/40 rounded-lg space-y-4">
-                  <h4 className="text-xs font-bold font-heading uppercase text-brand-red-light tracking-wider border-b border-brand-gray-dark/30 pb-2">
-                    🔍 Review Your Flight
-                  </h4>
+<div className="seat available">3A</div>
+<div className="seat available">3B</div>
+<div></div>
+<div className="seat selected">3C</div>
+<div className="seat available">3D</div>
 
-                  <div className="space-y-2 text-xs">
-                    <div>
-                      <div className="font-bold text-brand-white">✈️ Route Information</div>
-                      <div className="text-brand-gray-light mt-1">
-                        <b>Outbound:</b> {obFlight.origin_iata} ➔ {obFlight.dest_iata} ({obFlight.flight_number}) · {formatDate(obFlight.departure_time)} · {cabin} Class
-                      </div>
-                      {rtFlight && (
-                        <div className="text-brand-gray-light mt-1">
-                          <b>Return:</b> {rtFlight.origin_iata} ➔ {rtFlight.dest_iata} ({rtFlight.flight_number}) · {formatDate(rtFlight.departure_time)} · {cabin} Class
-                        </div>
-                      )}
-                    </div>
+<div className="seat occupied">4A</div>
+<div className="seat available">4B</div>
+<div></div>
+<div className="seat available">4C</div>
+<div className="seat available">4D</div>
+</div>
+</div>
+</div>
+</section>
 
-                    <div className="h-px bg-brand-gray-dark/30 my-2" />
+<section>
+<h2 className="font-headline-md text-headline-md text-primary-container mb-4 flex items-center gap-3">
+<span className="font-mono-data text-mono-data text-outline tracking-widest opacity-50">03</span>
+                        CONTACT DETAILS
+                    </h2>
+<div className="glass-panel rounded-xl p-6">
+<div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+<div className="space-y-2">
+<label className="font-label-md text-label-md text-on-surface-variant">Email Address</label>
+<input className="w-full form-input rounded-lg px-4 py-3 font-body-md text-body-md" placeholder="passenger@domain.com" type="email"/>
+</div>
+<div className="space-y-2">
+<label className="font-label-md text-label-md text-on-surface-variant">Phone Number</label>
+<div className="flex">
+<select className="form-input rounded-l-lg border-r-0 px-3 py-3 font-body-md text-body-md text-on-surface-variant w-24 appearance-none">
+<option>+971</option>
+<option>+44</option>
+<option>+1</option>
+</select>
+<input className="w-full form-input rounded-r-lg px-4 py-3 font-body-md text-body-md" placeholder="50 123 4567" type="tel"/>
+</div>
+</div>
+</div>
+</div>
+</section>
+</div>
 
-                    <div>
-                      <div className="font-bold text-brand-white">👥 Passengers & Seats</div>
-                      <div className="space-y-1 mt-1">
-                        {passengerDetails.map((p, i) => (
-                          <div key={i} className="flex justify-between items-center text-brand-gray-light">
-                            <span>{i + 1}. {p.first_name} {p.last_name}</span>
-                            <span>
-                              Outbound: <b className="text-brand-white">{outboundSeats[i]?.seat_number}</b>
-                              {rtFlight && <> | Return: <b className="text-brand-white">{returnSeats[i]?.seat_number}</b></>}
-                            </span>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
+<div className="xl:col-span-4">
+<div className="sticky top-[100px]">
+<div className="glass-panel rounded-xl p-6 relative overflow-hidden">
 
-                    <div className="h-px bg-brand-gray-dark/30 my-2" />
+<div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-transparent via-primary-container to-transparent opacity-50"></div>
+<h3 className="font-headline-md text-headline-md mb-6">Order Summary</h3>
 
-                    <div className="space-y-1">
-                      <div className="flex justify-between">
-                        <span className="text-brand-gray-light">Outbound Leg Subtotal:</span>
-                        <span className="font-bold">{formatPrice(outTotal)}</span>
-                      </div>
-                      {rtFlight && (
-                        <div className="flex justify-between">
-                          <span className="text-brand-gray-light">Return Leg Subtotal:</span>
-                          <span className="font-bold">{formatPrice(retTotal)}</span>
-                        </div>
-                      )}
-                      <div className="flex justify-between text-sm font-bold text-brand-red-light border-t border-dashed border-brand-gray-dark/40 pt-2 mt-1">
-                        <span>Total Paid Amount:</span>
-                        <span>{formatPrice(grandTotal)}</span>
-                      </div>
-                    </div>
-                  </div>
-                </div>
+<div className="bg-surface-container/50 rounded-lg p-4 mb-6 border border-outline/10">
+<div className="flex justify-between items-center mb-4">
+<div className="flex items-center gap-2">
+<span className="material-symbols-outlined text-on-surface-variant">flight_class</span>
+<span className="font-label-md text-label-md text-on-surface-variant">Emirates (EK)</span>
+</div>
+<span className="px-2 py-1 bg-surface rounded text-xs font-mono-data text-on-surface border-l-2 border-primary-container">Business</span>
+</div>
+<div className="flex items-center justify-between">
+<div className="text-center">
+<div className="font-headline-md text-headline-md">DXB</div>
+<div className="font-mono-data text-mono-data text-on-surface-variant">08:45</div>
+</div>
+<div className="flex-1 flex flex-col items-center px-4 relative">
+<span className="font-label-md text-label-md text-on-surface-variant text-[10px] mb-1">7h 20m</span>
+<div className="w-full h-[1px] bg-outline-variant relative">
+<span className="material-symbols-outlined text-primary-container absolute top-1/2 left-1/2 -translate-y-1/2 -translate-x-1/2 text-lg" style={{ fontVariationSettings: "'FILL' 1" }}>flight</span>
+</div>
+<span className="font-label-md text-label-md text-on-surface-variant text-[10px] mt-1">Direct</span>
+</div>
+<div className="text-center">
+<div className="font-headline-md text-headline-md">LHR</div>
+<div className="font-mono-data text-mono-data text-on-surface-variant">13:05</div>
+</div>
+</div>
+</div>
 
-                {/* Payment method selector */}
-                <div className="space-y-2">
-                  <label className="text-[10px] text-brand-gray-light font-bold uppercase tracking-wider">Payment Option</label>
-                  <div className="flex flex-wrap gap-2">
-                    {['Credit Card', 'Debit Card', 'PayPal', 'Bank Transfer'].map(m => (
-                      <button
-                        key={m}
-                        type="button"
-                        className={`px-4 py-2 text-xs font-semibold rounded border transition-colors ${
-                          paymentMethod === m
-                            ? 'bg-brand-red border-brand-red text-brand-white'
-                            : 'border-brand-gray-dark/50 text-brand-gray-light hover:bg-brand-card hover:text-brand-white'
-                        }`}
-                        onClick={() => setPaymentMethod(m)}
-                      >
-                        {m === 'PayPal' ? '🅿️ PayPal' : m === 'Bank Transfer' ? '🏛️ Bank Transfer' : `💳 ${m}`}
-                      </button>
-                    ))}
-                  </div>
-                </div>
+<div className="space-y-3 font-body-md text-body-md mb-6 border-b border-outline/10 pb-6">
+<div className="flex justify-between text-on-surface-variant">
+<span>Base Fare (1x Adult)</span>
+<span className="font-mono-data text-mono-data">$3,450.00</span>
+</div>
+<div className="flex justify-between text-on-surface-variant">
+<span>Taxes &amp; Fees</span>
+<span className="font-mono-data text-mono-data">$420.50</span>
+</div>
+<div className="flex justify-between text-on-surface-variant">
+<span>Seat Selection (3C)</span>
+<span className="font-mono-data text-mono-data">$85.00</span>
+</div>
+</div>
 
-                {/* Card Fields */}
-                {(paymentMethod === 'Credit Card' || paymentMethod === 'Debit Card') && (
-                  <div className="space-y-4 animate-fade-in">
-                    <div className="form-group mb-0">
-                      <label className="text-[10px] text-brand-gray-light font-bold uppercase tracking-wider">Card Number</label>
-                      <input
-                        type="text"
-                        placeholder="4111 1111 1111 1111"
-                        maxLength={19}
-                        className="w-full px-3 py-2 bg-brand-black border border-brand-gray-dark/50 rounded text-brand-white outline-none focus:border-brand-red text-sm font-semibold transition-colors"
-                        value={cardNumber}
-                        onChange={e => setCardNumber(formatCardInput(e.target.value))}
-                      />
-                    </div>
+<div className="flex justify-between items-end mb-8">
+<span className="font-body-lg text-body-lg text-on-surface-variant">Total Price</span>
+<div className="text-right">
+<span className="font-label-md text-label-md text-primary-container mr-1">USD</span>
+<span className="font-display-lg text-display-lg text-white drop-shadow-[0_0_10px_rgba(220,38,38,0.5)]">3,955<span className="text-2xl text-on-surface-variant">.50</span></span>
+</div>
+</div>
 
-                    <div className="grid grid-cols-2 gap-4">
-                      <div className="form-group mb-0">
-                        <label className="text-[10px] text-brand-gray-light font-bold uppercase tracking-wider">Expiry</label>
-                        <input
-                          type="text"
-                          placeholder="MM/YY"
-                          maxLength={5}
-                          className="w-full px-3 py-2 bg-brand-black border border-brand-gray-dark/50 rounded text-brand-white outline-none focus:border-brand-red text-sm font-semibold transition-colors"
-                          value={expiryDate}
-                          onChange={e => setExpiryDate(e.target.value)}
-                        />
-                      </div>
-                      <div className="form-group mb-0">
-                        <label className="text-[10px] text-brand-gray-light font-bold uppercase tracking-wider">CVV</label>
-                        <input
-                          type="text"
-                          placeholder="123"
-                          maxLength={3}
-                          className="w-full px-3 py-2 bg-brand-black border border-brand-gray-dark/50 rounded text-brand-white outline-none focus:border-brand-red text-sm font-semibold transition-colors"
-                          value={cvv}
-                          onChange={e => setCvv(e.target.value)}
-                        />
-                      </div>
-                    </div>
-
-                    <div className="form-group mb-0">
-                      <label className="text-[10px] text-brand-gray-light font-bold uppercase tracking-wider">Name on Card</label>
-                      <input
-                        type="text"
-                        placeholder="JOHN DOE"
-                        className="w-full px-3 py-2 bg-brand-black border border-brand-gray-dark/50 rounded text-brand-white outline-none focus:border-brand-red text-sm font-semibold transition-colors"
-                        value={cardName}
-                        onChange={e => setCardName(e.target.value)}
-                      />
-                    </div>
-                  </div>
-                )}
-
-                <div className="p-4 bg-brand-red/10 border border-brand-red/30 rounded flex justify-between items-center">
-                  <span className="text-xs font-bold text-brand-gray-light uppercase">Total Amount Due</span>
-                  <span className="text-2xl font-black font-heading text-brand-red-light">{formatPrice(grandTotal)}</span>
-                </div>
-
-                <div className="flex gap-3 pt-2">
-                  <button className="px-4 py-2 border border-brand-gray-dark/50 text-brand-gray-light text-xs font-bold rounded uppercase tracking-wider hover:text-brand-white transition-colors" onClick={() => setStep(2)}>
-                    ← Back
-                  </button>
-                  <button
-                    className="flex-1 py-3 bg-brand-red text-brand-white font-bold rounded uppercase tracking-wider text-xs hover:bg-brand-red-light disabled:opacity-45 transition-all shadow shadow-brand-red/25 transform hover:-translate-y-0.5"
-                    onClick={handleConfirmBooking}
-                    disabled={confirmLoading}
-                  >
-                    {confirmLoading ? 'Processing Payment...' : '✅ Confirm & Pay'}
-                  </button>
-                </div>
-                <p className="text-center text-[10px] text-brand-gray-light">🔒 Secured by 256-bit encryption. Mock transaction — no real charges.</p>
-              </div>
-            )}
-          </div>
-
-          {/* Right Price Summary Sidebar */}
-          <div className="lg:col-span-4">
-            <div className="p-6 bg-brand-charcoal border border-brand-gray-dark/40 rounded-xl space-y-4 shadow-xl sticky top-24">
-              <h4 className="text-base font-bold font-heading uppercase tracking-wider border-b border-brand-gray-dark/40 pb-2">
-                🧾 Price Summary
-              </h4>
-
-              <div className="space-y-2 text-xs">
-                <div className="flex justify-between items-center text-brand-gray-light">
-                  <span>Outbound Seats ({outboundSeats.length}/{neededPax})</span>
-                  <span className="font-bold text-brand-white">{formatPrice(outTotal)}</span>
-                </div>
-                <div className="flex justify-between items-center text-brand-gray-light">
-                  <span>Return Seats ({returnSeats.length}/{neededPax})</span>
-                  <span className="font-bold text-brand-white">{rtFlight ? formatPrice(retTotal) : '—'}</span>
-                </div>
-                
-                <div className="h-px bg-brand-gray-dark/40 my-2" />
-                
-                <div className="flex justify-between items-center">
-                  <span className="text-sm font-semibold text-brand-gray-light">Total Price</span>
-                  <span className="text-xl font-black text-brand-red-light font-heading">{formatPrice(grandTotal)}</span>
-                </div>
-
-                <div className="pt-3 space-y-1.5">
-                  <div className="py-1.5 text-center text-[10px] font-bold text-green-400 border border-green-500/20 bg-green-500/10 rounded uppercase tracking-wider">
-                    ✅ Free cancellation within 24h
-                  </div>
-                  <div className="py-1.5 text-center text-[10px] font-bold text-brand-red-light border border-brand-red/20 bg-brand-red/10 rounded uppercase tracking-wider">
-                    🎫 Instant boarding pass
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-
-        </div>
-      </div>
-
-    </div>
+<Link href="/booking"  className="w-full bg-primary-container text-white font-label-md text-label-md py-4 rounded-lg shadow-[0_0_20px_rgba(220,38,38,0.3)] hover:shadow-[0_0_30px_rgba(220,38,38,0.5)] hover:bg-inverse-primary transition-all duration-300 flex justify-center items-center gap-2">
+<span className="material-symbols-outlined">lock</span>
+                            Confirm &amp; Book
+                        </Link>
+<p className="text-center font-mono-data text-[11px] text-on-surface-variant mt-3 opacity-60">By clicking Confirm, you agree to the Fare Rules and Terms of Service.</p>
+</div>
+</div>
+</div>
+</div>
+</main>
+    </>
   );
 }
